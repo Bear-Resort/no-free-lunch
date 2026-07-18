@@ -18,7 +18,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MiniGrid } from "./MiniGrid";
+import { MapLightbox, MiniGrid } from "./MiniGrid";
 import { cn } from "@/lib/utils";
 
 interface CardPosition {
@@ -71,6 +71,7 @@ export function MachineBench({
   const [op, setOp] = useState<Op | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [positions, setPositions] = useState<Record<number, CardPosition>>({});
+  const [zoom, setZoom] = useState<number | null>(null);
   const dragRef = useRef<DragState | null>(null);
 
   const pool = useMemo(() => {
@@ -205,6 +206,7 @@ export function MachineBench({
                   onPointerDown={(event) => startDrag(event, i)}
                   onPointerMove={moveDrag}
                   onPointerUp={(event) => endDrag(event, i)}
+                  onDoubleClick={() => setZoom(i)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") pick(i);
                   }}
@@ -365,6 +367,14 @@ export function MachineBench({
             </div>
           </aside>
         </div>
+        {zoom !== null && zoom < pool.length && (
+          <MapLightbox
+            bb={pool[zoom]}
+            label={`${label(zoom)} — ${zoom < revealed.length ? "exhibit" : "your intermediate"}`}
+            activeClass={zoom < revealed.length ? "bg-accent" : "bg-success"}
+            onClose={() => setZoom(null)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
