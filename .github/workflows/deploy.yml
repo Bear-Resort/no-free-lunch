@@ -1,5 +1,7 @@
-# Deploys Convex production functions and builds the Vite frontend with the
-# production Convex URL injected as VITE_CONVEX_URL.
+# Deploys Convex production, builds the Vite frontend with the production
+# Convex URL, then publishes `dist/` to GitHub Pages.
+#
+# Site: https://bear-resort.github.io/no-free-lunch/
 #
 # Required secret (repo → Settings → Secrets and variables → Actions):
 #   CONVEX_DEPLOY_KEY
@@ -7,6 +9,8 @@
 # Create it in Convex Dashboard → your project → Production deployment →
 # Settings → Deploy Keys → Generate Production Deploy Key
 # (enable deployment:deploy). Paste the full key value into GitHub.
+#
+# Also enable Pages: Settings → Pages → Build and deployment → GitHub Actions.
 
 name: Deploy
 
@@ -15,12 +19,17 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     name: Convex + frontend build
     runs-on: ubuntu-latest
     steps:
@@ -42,10 +51,21 @@ jobs:
           --cmd-url-env-var-name VITE_CONVEX_URL
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          # Project Pages live under /no-free-lunch/
+          VITE_BASE: /no-free-lunch/
 
-      - name: Upload static site
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: dist
           path: dist
-          if-no-files-found: error
+
+  deploy-pages:
+    name: GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

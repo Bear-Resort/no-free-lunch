@@ -117,7 +117,9 @@ Workflows live in [`.github/workflows/`](./.github/workflows/):
 | Workflow | When | What |
 |----------|------|------|
 | `ci.yml` | PR + push | `npm test` + typecheck |
-| `deploy.yml` | push to `main` | `npx convex deploy` + production frontend build |
+| `deploy.yml` | push to `main` | Convex production deploy + Vite build + **GitHub Pages** |
+
+Public site: [https://bear-resort.github.io/no-free-lunch/](https://bear-resort.github.io/no-free-lunch/)
 
 ### Secret to add
 
@@ -133,12 +135,11 @@ That single secret is enough for CI deploy. The action runs:
 npx convex deploy --yes --cmd 'npm run build' --cmd-url-env-var-name VITE_CONVEX_URL
 ```
 
+with `VITE_BASE=/no-free-lunch/` so asset paths work on project Pages, then uploads `dist/` via `actions/deploy-pages`.
+
 Convex injects the **production** URL into the Vite build; you do **not** need a separate `VITE_CONVEX_URL` GitHub secret for this workflow.
 
-If you host the `dist/` site on Vercel/Netlify instead, either:
-
-- use the same build command + `CONVEX_DEPLOY_KEY` there, or
-- set `VITE_CONVEX_URL` to your production Convex URL on that host.
+Pages source should be **GitHub Actions** (Settings → Pages → Build and deployment).
 
 ## Game rules
 
@@ -146,6 +147,6 @@ Canonical: [`.agents/rules/game-rules.md`](./.agents/rules/game-rules.md).
 
 ## Next
 
-1. Add `CONVEX_DEPLOY_KEY` in GitHub Actions secrets
-2. Push to `main` to run CI + Convex production deploy
-3. Host the uploaded `dist` artifact (or wire Vercel/Pages) for the public site
+1. Add `CONVEX_DEPLOY_KEY` in GitHub Actions secrets (if missing)
+2. Push to `main` to run CI + Convex deploy + GitHub Pages
+3. Open [https://bear-resort.github.io/no-free-lunch/](https://bear-resort.github.io/no-free-lunch/)
