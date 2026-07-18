@@ -64,6 +64,15 @@ function demoWinEndingRequested() {
   }
 }
 
+/** ?intro=1 forces the deposition to replay, seen-flag or not. */
+function introForced() {
+  try {
+    return new URLSearchParams(window.location.search).get("intro") === "1";
+  } catch {
+    return false;
+  }
+}
+
 /** Deterministic narration from exact solver telemetry — no invented facts. */
 function narrate({ move, telemetry }: AgentDecision): string {
   const worlds =
@@ -412,7 +421,7 @@ function LocalGameView({
   >(() =>
     opponent === "agent" && demoWinEndingRequested()
       ? "verdict"
-      : opponent === "agent" && !introSeen()
+      : opponent === "agent" && (introForced() || !introSeen())
         ? "intro"
         : "seal",
   );
