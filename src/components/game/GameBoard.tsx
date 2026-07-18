@@ -43,7 +43,7 @@ export function Pin({ seat, className }: { seat: Seat; className?: string }) {
 const cx = (cell: number) => ((cell % 9) + 0.5) * (100 / 9);
 const cy = (cell: number) => (Math.floor(cell / 9) + 0.5) * (100 / 9);
 
-const THICK = 26; // board slab thickness in px
+const THICK = 20; // painted slab thickness in px
 
 function StringTrail({ trail, seat }: { trail: number[]; seat: Seat }) {
   if (trail.length === 0) return null;
@@ -117,48 +117,27 @@ export function GameBoard({
 
   return (
     <div
-      className="w-full max-w-[min(720px,calc(100svh-18rem))] [perspective:1200px]"
+      className="w-full max-w-[min(720px,calc(100svh-18rem))] pb-7 [perspective:1100px]"
       onMouseMove={onMove}
       onMouseLeave={() => setTilt({ rx: 13, ry: 0 })}
     >
+      {/* One flat 3D transform, no preserve-3d: browsers hit-test this
+          correctly. The slab thickness below is painted, not modeled. */}
       <div
         style={{
           transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
-          transformStyle: "preserve-3d",
           transition: "transform 260ms ease-out",
         }}
         className="relative"
       >
-        {/* slab edges — the board's actual thickness */}
+        {/* painted slab thickness */}
         <div
           aria-hidden
           style={{
             height: THICK,
-            transform: "rotateX(-90deg)",
-            transformOrigin: "top center",
-            background: "linear-gradient(180deg, #332415, #1c130a)",
+            background: "linear-gradient(180deg, #3a2a18, #17100a)",
           }}
-          className="pointer-events-none absolute left-0 right-0 top-full"
-        />
-        <div
-          aria-hidden
-          style={{
-            width: THICK,
-            transform: "rotateY(90deg)",
-            transformOrigin: "left center",
-            background: "linear-gradient(90deg, #2c2015, #191009)",
-          }}
-          className="pointer-events-none absolute bottom-0 left-full top-0"
-        />
-        <div
-          aria-hidden
-          style={{
-            width: THICK,
-            transform: "rotateY(-90deg)",
-            transformOrigin: "right center",
-            background: "linear-gradient(270deg, #2c2015, #191009)",
-          }}
-          className="pointer-events-none absolute bottom-0 right-full top-0"
+          className="pointer-events-none absolute inset-x-[2px] top-full rounded-b-md shadow-[0_18px_40px_-10px_rgba(0,0,0,0.9)]"
         />
 
         {/* board face */}
