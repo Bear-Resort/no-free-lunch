@@ -39,6 +39,40 @@ export function Pin({ seat, className }: { seat: Seat; className?: string }) {
   );
 }
 
+/** Codex's blue hand: a brief boss gesture when the Assayer pins a cell. */
+function CodexHand({ className }: { className?: string }) {
+  return (
+    <span aria-hidden className={cn("pointer-events-none absolute block", className)}>
+      <svg
+        viewBox="0 0 56 64"
+        className="h-full w-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.85)]"
+      >
+        <path
+          d="M30 3 C35 3 38 7 38 13 L38 30 L42 26 C46 22 52 25 51 31 L49 43 C48 55 40 61 29 61 L22 61 C11 61 5 55 5 44 L5 35 C5 29 12 27 16 31 L19 34 L19 13 C19 7 24 3 30 3 Z"
+          fill="#9db8e8"
+          stroke="#071225"
+          strokeWidth="2.6"
+        />
+        <path
+          d="M29 7 L29 37 M19 35 C24 39 31 39 38 35 M13 36 C16 43 21 47 28 48"
+          fill="none"
+          stroke="#2a4c86"
+          strokeLinecap="round"
+          strokeWidth="2"
+        />
+        <path
+          d="M35 10 C36 16 36 23 35 30"
+          fill="none"
+          stroke="#dbe8ff"
+          strokeLinecap="round"
+          strokeWidth="2"
+          opacity="0.75"
+        />
+      </svg>
+    </span>
+  );
+}
+
 /** Center of a cell in 0–100 board coordinates. */
 const cx = (cell: number) => ((cell % 9) + 0.5) * (100 / 9);
 const cy = (cell: number) => (Math.floor(cell / 9) + 0.5) * (100 / 9);
@@ -149,6 +183,7 @@ export function GameBoard({
                 const drilled = state !== 0;
                 const hasEmber = drilled && bbGet(game.gold, cell);
                 const isLast = lastDrill?.cell === cell;
+                const isBlueBossPin = isLast && state === 2;
                 const p = !drilled && heat ? heat[cell] : 0;
 
                 const style: CSSProperties | undefined = hasEmber
@@ -182,6 +217,9 @@ export function GameBoard({
                         seat={state === 1 ? "red" : "black"}
                         className="absolute left-1/2 top-[24%] w-[38%] -translate-x-1/2"
                       />
+                    )}
+                    {isBlueBossPin && (
+                      <CodexHand className="codex-hand-pin -right-[52%] -top-[72%] z-30 w-[118%]" />
                     )}
                     {isLast && hasEmber && (
                       <span aria-hidden className="pointer-events-none absolute inset-0">

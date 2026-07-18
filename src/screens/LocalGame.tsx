@@ -34,6 +34,24 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+const INTRO_STORAGE_KEY = "nfl.blackForestIntroSeen.v1";
+
+function introSeen() {
+  try {
+    return window.localStorage.getItem(INTRO_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function rememberIntroSeen() {
+  try {
+    window.localStorage.setItem(INTRO_STORAGE_KEY, "true");
+  } catch {
+    // Nonessential memory: private browsing can forget the deposition.
+  }
+}
+
 /** Deterministic narration from exact solver telemetry — no invented facts. */
 function narrate({ move, telemetry }: AgentDecision): string {
   const worlds =
@@ -180,6 +198,25 @@ function DesktopIcon({
   );
 }
 
+function TurnWhisper({
+  turn,
+  isAgentTurn,
+}: {
+  turn: number;
+  isAgentTurn: boolean;
+}) {
+  if (turn > 2) return null;
+  return (
+    <div className="w-full max-w-[720px] border border-gold/35 bg-[#0d100a]/85 px-3 py-2 font-pixel text-xl leading-tight text-ink shadow-[0_8px_24px_rgba(0,0,0,0.65)] animate-in fade-in slide-in-from-bottom-1 duration-300">
+      {turn === 1
+        ? "First motion: pin any square. A miss is evidence. An ember is rent paid to the dream."
+        : isAgentTurn
+          ? "Now watch the blue hand. The thing across the table leaks evidence when it touches the board."
+          : "The blue pin is not merely hostile. It is testimony. Drill again, or open theory.fld to stare at the problem professionally."}
+    </div>
+  );
+}
+
 /**
  * Same-device game screen. Two humans pass-and-play, or human (Red) vs
  * The Assayer (Black) — the agent runs the same engine + reducer locally.
@@ -207,7 +244,7 @@ export function LocalGame({
   const spokenCat = useRef("");
   const [phase, setPhase] = useState<
     "intro" | "seal" | "play" | "outro" | "digital" | "answer" | "failed"
-  >(opponent === "agent" ? "intro" : "seal");
+  >(() => (opponent === "agent" && !introSeen() ? "intro" : "seal"));
 
   const seat = seatForTurn(game.turn);
   const revealed = revealedMaps(game);
@@ -349,6 +386,10 @@ export function LocalGame({
   };
 
   const lastEvents = [...game.log].slice(-4).reverse();
+  const finishIntro = (next: "seal" | "digital" = "seal") => {
+    rememberIntroSeen();
+    setPhase(next);
+  };
 
   return (
     <div
@@ -405,6 +446,9 @@ export function LocalGame({
             disabled={benchOpen}
             onDrill={onDrill}
           />
+          {phase === "play" && !benchOpen && (
+            <TurnWhisper turn={game.turn} isAgentTurn={isAgentTurn} />
+          )}
           <div className="w-full max-w-[720px]">
             <PlayerPlate
               seat="red"
@@ -451,7 +495,7 @@ export function LocalGame({
             </div>
             <ol className="flex flex-col gap-1.5 font-mono text-xs text-ink-muted">
               {lastEvents.length === 0 && (
-                <li className="italic">Red plays first. Drill or run the machines.</li>
+                <li className="italic">Red plays first. Pin a square; let the dream incriminate itself.</li>
               )}
               {lastEvents.map((r) => (
                 <li key={r.turn} className="flex items-baseline gap-2">
@@ -510,6 +554,7 @@ export function LocalGame({
         onOpenChange={setBenchOpen}
         revealed={revealed}
         budget={game.variant.machineBudget}
+        nextRevealTurn={game.variant.revealAfter[revealed.length]}
         onSubmit={onAttempt}
       />
 
@@ -652,7 +697,9 @@ export function LocalGame({
               text: "Counsel. Prove you know the shape of their dream — or dig it out, ember by ember. Sit.",
             },
           ]}
-          onDone={() => setPhase("seal")}
+          onDone={() => finishIntro("seal")}
+          onSkip={() => finishIntro("seal")}
+          skipLabel="skip deposition"
         />
       )}
       {phase === "seal" && <CaseOpenedSeal onDone={() => setPhase("play")} />}
@@ -672,6 +719,8 @@ export function LocalGame({
             },
           ]}
           onDone={() => setPhase("digital")}
+          onSkip={() => setPhase("digital")}
+          skipLabel="skip appeal"
         />
       )}
       {phase === "answer" && (
@@ -742,7 +791,7 @@ export function LocalGame({
                     setInsight(false);
                     setAssayerNote(null);
                     spokenCat.current = "";
-                    setPhase("intro");
+                    setPhase("seal");
                   }}
                   className="border-2 border-b-[#404040] border-l-white border-r-[#404040] border-t-white bg-[#c0c0c0] px-4 py-1 text-sm active:border-b-white active:border-l-[#404040] active:border-r-white active:border-t-[#404040]"
                 >
