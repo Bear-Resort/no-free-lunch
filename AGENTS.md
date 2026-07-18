@@ -50,16 +50,23 @@ Implement mode selection and session shaping early; do not invent agent behavior
 
 Scaffold the app when implementation starts; match this layout unless the user chooses a different React meta-framework.
 
-## Commands (fill in after scaffold)
+## Commands
 
 ```bash
-# Expected once the app exists:
 npm install
-npm run dev          # frontend
-npx convex dev       # Convex — use for development, never deploy for local work
-npm run lint
-npm run typecheck
+npm run dev          # Vite frontend (local + vs-agent modes work without Convex)
+npm test             # Vitest — engine/solver suite must stay green
+npm run typecheck    # strict TS
+npx convex dev       # Convex — development only, never deploy for local work
 ```
+
+## Architecture note
+
+The pure game engine lives in `convex/engine/` (zero Convex/DOM imports) so the
+same code runs in the client, tests, and future Convex functions. Client
+imports it via the `@engine/*` alias. Key invariant, enforced by tests: the
+true gold layout is always consistent with all public evidence
+(`tests/engine/solver.test.ts`).
 
 ## Boundaries
 

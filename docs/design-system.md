@@ -4,6 +4,22 @@
 
 Modern and simplified. One clear composition per screen. Dark blue as the primary theme — not purple gradients, not warm cream editorial, not generic light SaaS.
 
+### 2026-07-18 revision 3 — "The Black Forest" (current)
+
+Inscryption-inspired pivot: **one candle in a dark forest room**. Near-black moss ground (`#0a0d08`), bone ink, ember amber `#e3a13e`, string red `#c03b2d`, pin blue `#5b82c0`. Lit paper objects (folder, exhibits) keep warm parchment hexes with hardcoded dark paper-ink text. Board = dark wood, tilted, pale scratched grid; players hammer **red/blue pins**; ember strikes glow and tie **red string** between finds in discovery order. Opponent is unseen — blinking amber **eyes** on the far plate. Title: gilded cross with candle halo (keep — it's the brand), drifting mono "agent chatter" scraps, trefoil **CAUTION — NATURAL HUMANS AROUND** sign. Narrative: a logic student fell asleep; Codex, god of merciless implication, keeps the lights off; "gold" is spoken of as **embers** of the dream. Codex-authored copy in dialogs is canon — dark, dry, faintly bureaucratic.
+
+### 2026-07-18 revision 2 — "Reliquary Case-File" (superseded)
+
+User-directed pivot from dark to **bright**: religious light + detective absurdism.
+
+- **Ground**: aged parchment (`#ece1c6` family), umber ink (`#2a2118`), paper-fiber vignette + faint survey grid.
+- **Accents**: gilded gold `#b8860b` (the only warmth that matters), stamp red `#b3261e`, icon blue `#2f4b8f`.
+- **Board**: full-width wooden Go-board (CSS grain, `wood-*` tokens), tilted `rotateX(13deg)` in perspective, heavy umber frame. Players choose **emoji pieces** pre-game; drills stamp the emoji; player plates sit above/below the board.
+- **Maps = evidence**: "CASE FILE NFL-0718" folder; revealed maps are askew **EXHIBIT** cards, future ones **SEALED**; verdicts and endings are rubber **stamps** (HOT/WARM/COLD, UNSEALED, CASE CLOSED). Mono type for case copy.
+- **Hero**: the blurred 3D map-cross, regilded with a halo ring (`OrbitalHero.tsx`) — keep it, it's the brand.
+- **Copy thesis**: "The gold is real. The reason is not."
+- Display: Bricolage Grotesque · body: Manrope · case copy: ui-mono. Sound (WebAudio) + drill/gold particles are part of the language — keep.
+
 ## Color
 
 Define CSS variables early (names illustrative; tune when scaffolding):

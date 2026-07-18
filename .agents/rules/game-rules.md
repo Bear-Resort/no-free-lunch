@@ -33,7 +33,16 @@ Before play begins, the system:
 
 Players never see the formula or the unrevealed true map. They only learn about cells by **drilling** or by the outcome of a **map attempt**.
 
-Gold count is whatever the formula produces (random-ish via generation, not a fixed quota), but the layout **must contain at least 1 gold**. If generation yields zero gold, **regenerate** maps/formula until that holds.
+Gold count is whatever the formula produces (random-ish via generation, not a fixed quota), subject to the guardrails below. If a generation fails any guardrail, **regenerate** maps/formula until all hold.
+
+### Generation guardrails (tuned 2026-07-18)
+
+Reject and regenerate unless **all** of these hold:
+
+1. Gold count is between **8 and 30** inclusive (no barren deserts, no floods).
+2. The true layout does **not** equal any single map (kills the "submit Map 1 on turn 1" steal — otherwise ~3% of games are stolen before play starts).
+3. The formula references at least **2 distinct maps**, at least one of which is Map 2–5.
+4. The formula contains at most **2 XOR** operators (long XOR chains are visually opaque to humans).
 
 ## Map reveals (system)
 
@@ -84,7 +93,12 @@ Costs the **entire turn** (no drill on that turn).
 2. **Submit the full candidate map**.
 3. Outcomes:
    - **Correct** (matches true gold layout) → that player **immediately wins**.
-   - **Incorrect** → both players learn only that the attempt was **incorrect**. No further information about which cells were wrong or where gold is.
+   - **Incorrect** → both players see a public **temperature readout** of how close the attempt was — never cell-level detail, never an exact number:
+     - **HOT** — at most 5 cells wrong
+     - **WARM** — 6–15 cells wrong
+     - **COLD** — more than 15 cells wrong
+
+     The submitted candidate layout itself is **not** shown to the opponent — only the verdict/temperature is public.
 
 ## Combination machines (map attempt UI)
 
@@ -104,8 +118,22 @@ Three machines, each taking **2 input maps** and producing **1 output map**:
 
 1. **Map win** — submit the correct full candidate map → immediate win.
 2. **Score win** — when **all gold** on the board has been found (via drills), the player with the **higher score** wins.
-3. **Tie** — if scores are equal when all gold is found, the game is a **tie** (draw).
-4. Score comes only from drilling gold (**+3** each).
+3. **Turn cap** — if nobody has won by the end of **turn 40**, the game ends; the player with the higher score wins.
+4. **Tie** — if scores are equal at a score-win or turn-cap ending, the game is a **tie** (draw).
+5. Score comes only from drilling gold (**+3** each).
+
+## Demo variant — "Lunch Break"
+
+A short mode for demos and first-time players. Same rules except:
+
+| Parameter | Standard | Lunch Break |
+|-----------|----------|-------------|
+| Maps | 5 | **3** |
+| Secret formula | ≤ 4 ops | ≤ **2** ops |
+| Reveals | start / after 7 / 14 / 21 / 28 | start / after **5** / **10** |
+| Machine budget per attempt | 5 | **3** |
+| Turn cap | 40 | **20** |
+| Gold count | 8–30 | **6–20** |
 
 ---
 

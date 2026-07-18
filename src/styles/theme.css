@@ -1,0 +1,308 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* "The Black Forest" — Inscryption-dark room, one candle pool of light,
+   lit paper objects, ember amber, string red, pin blue. (rev 3) */
+@theme {
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-pixel: "VT323", "Courier New", monospace;
+
+  --color-bg: #0a0d08;
+  --color-elevated: #151a10;
+  --color-surface: #1d2416;
+  --color-edge: #333e26;
+  --color-ink: #e8e4d2;
+  --color-ink-muted: #97a181;
+  --color-accent: #5b82c0;
+  --color-accent-soft: #182541;
+  --color-danger: #cf4631;
+  --color-success: #7cb877;
+  --color-gold: #e3a13e;
+  --color-seat-red: #cf4631;
+  --color-seat-blue: #5b82c0;
+  --color-wood: #4a3524;
+  --color-wood-line: #d9c9a0;
+  --color-wood-dark: #241a10;
+
+  --animate-drill-pop: drill-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-spark: spark 0.65s ease-out forwards;
+  --animate-stamp: stamp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* One candle over the table; the forest eats the corners. */
+  background-image:
+    radial-gradient(900px 620px at 50% 38%, rgba(227, 161, 62, 0.1) 0%, rgba(10, 13, 8, 0) 60%),
+    radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.6) 100%);
+  min-height: 100vh;
+}
+
+/* ── Hero orbital: the gilded map-cross, burning in the dark ───────────── */
+
+.orbital-stage {
+  perspective: 900px;
+}
+
+.cross3d {
+  transform-style: preserve-3d;
+  animation: cross-spin 22s linear infinite;
+  filter: blur(8px) brightness(1.2);
+}
+
+.cross3d .face {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: linear-gradient(
+    160deg,
+    rgba(240, 187, 87, 0.5),
+    rgba(166, 117, 15, 0.12)
+  );
+  border: 1px solid rgba(240, 187, 87, 0.55);
+}
+
+@keyframes cross-spin {
+  from {
+    transform: rotateX(-18deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(-18deg) rotateY(360deg);
+  }
+}
+
+.god-ray {
+  animation: ray-breathe 7s ease-in-out infinite alternate;
+}
+
+@keyframes ray-breathe {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.orbit-spin {
+  animation: orbit-spin 30s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Floating agent chatter on the title screen ────────────────────────── */
+
+.float-code {
+  animation: float-code var(--fc-dur, 22s) linear infinite;
+  animation-delay: var(--fc-delay, 0s);
+  opacity: 0;
+}
+
+@keyframes float-code {
+  0% {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--fc-opacity, 0.3);
+  }
+  85% {
+    opacity: var(--fc-opacity, 0.3);
+  }
+  100% {
+    transform: translateY(-60px);
+    opacity: 0;
+  }
+}
+
+/* ── Something across the table ────────────────────────────────────────── */
+
+.eye {
+  animation: eye-blink 4.6s infinite;
+  transform-origin: center;
+}
+
+@keyframes eye-blink {
+  0%,
+  91%,
+  100% {
+    transform: scaleY(1);
+  }
+  94%,
+  96% {
+    transform: scaleY(0.12);
+  }
+}
+
+/* ── The wooden table board ────────────────────────────────────────────── */
+
+.wood-panel {
+  background-color: var(--color-wood);
+  background-image:
+    radial-gradient(
+      560px 430px at 50% 42%,
+      rgba(240, 186, 96, 0.32) 0%,
+      rgba(227, 161, 62, 0.1) 55%,
+      rgba(0, 0, 0, 0) 75%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(20, 12, 6, 0.28) 0 2px,
+      transparent 2px 11px,
+      rgba(20, 12, 6, 0.14) 11px 13px,
+      transparent 13px 29px
+    ),
+    repeating-linear-gradient(
+      88deg,
+      rgba(236, 205, 150, 0.09) 0 1px,
+      transparent 1px 7px
+    ),
+    linear-gradient(180deg, #5f4530, #493421);
+}
+
+/* ── Wind, palm, and other hauntings ───────────────────────────────────── */
+
+@media (pointer: fine) {
+  .cursor-hidden,
+  .cursor-hidden * {
+    cursor: none !important;
+  }
+}
+
+.wind-streak {
+  animation: wind-sweep var(--ws-dur, 1.9s) cubic-bezier(0.3, 0, 0.7, 1) both;
+  animation-delay: var(--ws-delay, 0s);
+}
+
+@keyframes wind-sweep {
+  0% {
+    transform: translateX(-18vw) skewX(-12deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(118vw) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+.candle-flicker {
+  animation: candle-flicker 2.4s ease-in-out both;
+}
+
+@keyframes candle-flicker {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.5;
+  }
+  22% {
+    opacity: 0.12;
+  }
+  34% {
+    opacity: 0.55;
+  }
+  48% {
+    opacity: 0.2;
+  }
+  66% {
+    opacity: 0.45;
+  }
+}
+
+.palm-tremble {
+  animation: palm-tremble 0.16s linear infinite;
+}
+
+@keyframes palm-tremble {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(1.4px, -1px) rotate(0.8deg);
+  }
+  50% {
+    transform: translate(-1.2px, 1.2px) rotate(-0.7deg);
+  }
+  75% {
+    transform: translate(1px, 1.4px) rotate(0.5deg);
+  }
+  100% {
+    transform: translate(-1.4px, -1.2px) rotate(-0.4deg);
+  }
+}
+
+.caret-blink {
+  animation: caret-blink 0.9s steps(1) infinite;
+}
+
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ── Game feedback ─────────────────────────────────────────────────────── */
+
+@keyframes drill-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes spark {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes stamp {
+  0% {
+    transform: scale(1.6) rotate(-6deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(-2deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

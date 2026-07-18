@@ -1,0 +1,240 @@
+import { useState, type CSSProperties, type MouseEvent } from "react";
+import { CELLS, bbGet } from "@engine/bitboard";
+import type { Game, Seat } from "@engine/rules";
+import { cn } from "@/lib/utils";
+
+/** Outward offsets for the 8 ember-burst particles. */
+const SPARKS = [
+  { dx: "0px", dy: "-26px" },
+  { dx: "20px", dy: "-18px" },
+  { dx: "26px", dy: "0px" },
+  { dx: "19px", dy: "20px" },
+  { dx: "0px", dy: "26px" },
+  { dx: "-20px", dy: "19px" },
+  { dx: "-26px", dy: "0px" },
+  { dx: "-18px", dy: "-21px" },
+];
+
+const PIN_GRADIENT: Record<Seat, string> = {
+  red: "radial-gradient(circle at 32% 30%, #f2a091, #cf4631 46%, #6e1a10 100%)",
+  black: "radial-gradient(circle at 32% 30%, #9db8e8, #5b82c0 46%, #1c3766 100%)",
+};
+
+const STRING_COLOR: Record<Seat, { line: string; knot: string }> = {
+  red: { line: "#c03b2d", knot: "#8e2418" },
+  black: { line: "#4f74b8", knot: "#2c4a7e" },
+};
+
+/** A pushpin: elliptical ground shadow, stem, glossy head. */
+export function Pin({ seat, className }: { seat: Seat; className?: string }) {
+  return (
+    <span aria-hidden className={cn("relative block", className)}>
+      <span className="absolute left-1/2 top-[72%] h-[30%] w-[85%] -translate-x-[38%] rounded-full bg-black/45 blur-[1.5px]" />
+      <span className="absolute left-1/2 top-[54%] h-[34%] w-[12%] -translate-x-1/2 rounded-sm bg-[#3d3226] shadow-[0.5px_0_0_rgba(0,0,0,0.5)]" />
+      <span
+        style={{ background: PIN_GRADIENT[seat] }}
+        className="absolute inset-x-0 top-0 aspect-square rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.65)] ring-1 ring-black/50"
+      />
+    </span>
+  );
+}
+
+/** Center of a cell in 0–100 board coordinates. */
+const cx = (cell: number) => ((cell % 9) + 0.5) * (100 / 9);
+const cy = (cell: number) => (Math.floor(cell / 9) + 0.5) * (100 / 9);
+
+const THICK = 26; // board slab thickness in px
+
+function StringTrail({ trail, seat }: { trail: number[]; seat: Seat }) {
+  if (trail.length === 0) return null;
+  const { line, knot } = STRING_COLOR[seat];
+  return (
+    <>
+      {trail.slice(1).map((cell, i) => {
+        const from = trail[i];
+        const x1 = cx(from);
+        const y1 = cy(from);
+        const x2 = cx(cell);
+        const y2 = cy(cell);
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2 + 3.2; // twine sag
+        return (
+          <g key={`${from}-${cell}`}>
+            <path
+              d={`M ${x1} ${y1 + 0.5} Q ${mx} ${my + 0.6} ${x2} ${y2 + 0.5}`}
+              fill="none"
+              stroke="rgba(0,0,0,0.45)"
+              strokeWidth="0.9"
+            />
+            <path
+              d={`M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`}
+              fill="none"
+              stroke={line}
+              strokeWidth="0.7"
+            />
+          </g>
+        );
+      })}
+      {trail.map((cell) => (
+        <circle key={cell} cx={cx(cell)} cy={cy(cell)} r="0.9" fill={knot} />
+      ))}
+    </>
+  );
+}
+
+/**
+ * The archive nailed to a real slab of wood — thickness and all. The slab
+ * tilts gently after the pointer (never far enough to see its back). Pins
+ * are red or blue; ember strikes turn the whole cell gold, and string ties
+ * each player's embers to their own previous find.
+ */
+export function GameBoard({
+  game,
+  heat,
+  disabled,
+  onDrill,
+}: {
+  game: Game;
+  heat?: number[] | null;
+  disabled?: boolean;
+  onDrill: (cell: number) => void;
+}) {
+  const [tilt, setTilt] = useState({ rx: 13, ry: 0 });
+  const lastDrill = [...game.log].reverse().find((r) => r.action === "drill");
+  const emberDrills = game.log.filter((r) => r.action === "drill" && r.struckGold);
+  const redTrail = emberDrills.filter((r) => r.seat === "red").map((r) => r.cell!);
+  const blueTrail = emberDrills.filter((r) => r.seat === "black").map((r) => r.cell!);
+
+  const onMove = (e: MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+    setTilt({
+      rx: 13 - ny * 4, // 9°..17° — the back stays hidden
+      ry: Math.max(-7, Math.min(7, nx * 7)),
+    });
+  };
+
+  return (
+    <div
+      className="w-full max-w-[min(720px,calc(100svh-18rem))] [perspective:1200px]"
+      onMouseMove={onMove}
+      onMouseLeave={() => setTilt({ rx: 13, ry: 0 })}
+    >
+      <div
+        style={{
+          transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+          transformStyle: "preserve-3d",
+          transition: "transform 260ms ease-out",
+        }}
+        className="relative"
+      >
+        {/* slab edges — the board's actual thickness */}
+        <div
+          aria-hidden
+          style={{
+            height: THICK,
+            transform: "rotateX(-90deg)",
+            transformOrigin: "top center",
+            background: "linear-gradient(180deg, #332415, #1c130a)",
+          }}
+          className="pointer-events-none absolute left-0 right-0 top-full"
+        />
+        <div
+          aria-hidden
+          style={{
+            width: THICK,
+            transform: "rotateY(90deg)",
+            transformOrigin: "left center",
+            background: "linear-gradient(90deg, #2c2015, #191009)",
+          }}
+          className="pointer-events-none absolute bottom-0 left-full top-0"
+        />
+        <div
+          aria-hidden
+          style={{
+            width: THICK,
+            transform: "rotateY(-90deg)",
+            transformOrigin: "right center",
+            background: "linear-gradient(270deg, #2c2015, #191009)",
+          }}
+          className="pointer-events-none absolute bottom-0 right-full top-0"
+        />
+
+        {/* board face */}
+        <div className="wood-panel relative rounded-sm border-[10px] border-wood-dark p-2 shadow-[0_28px_60px_-18px_rgba(0,0,0,0.85)] sm:p-3">
+          <div className="relative">
+            <div className="grid grid-cols-9">
+              {Array.from({ length: CELLS }, (_, cell) => {
+                const state = game.cells[cell];
+                const drilled = state !== 0;
+                const hasEmber = drilled && bbGet(game.gold, cell);
+                const isLast = lastDrill?.cell === cell;
+                const p = !drilled && heat ? heat[cell] : 0;
+
+                const style: CSSProperties | undefined = hasEmber
+                  ? {
+                      background:
+                        "radial-gradient(circle at 42% 36%, #f4c464 0%, #dd9c2f 58%, #96650f 100%)",
+                      boxShadow:
+                        "0 0 14px rgba(227,161,62,0.55), inset 0 0 6px rgba(120,74,6,0.6)",
+                    }
+                  : p > 0
+                    ? { backgroundColor: `rgba(227, 161, 62, ${0.05 + p * 0.4})` }
+                    : undefined;
+
+                return (
+                  <button
+                    key={cell}
+                    disabled={disabled || drilled || game.status !== "active"}
+                    onClick={() => onDrill(cell)}
+                    aria-label={`cell ${Math.floor(cell / 9) + 1}-${(cell % 9) + 1}`}
+                    style={style}
+                    className={cn(
+                      "relative aspect-square border border-wood-line/35 transition-all duration-150",
+                      !drilled &&
+                        "hover:z-10 hover:scale-[1.07] hover:border-gold/70 hover:bg-[rgba(227,161,62,0.14)] hover:shadow-md disabled:hover:scale-100",
+                      drilled && !hasEmber && "bg-black/20",
+                      isLast && "z-10 animate-drill-pop",
+                    )}
+                  >
+                    {drilled && (
+                      <Pin
+                        seat={state === 1 ? "red" : "black"}
+                        className="absolute left-1/2 top-[24%] w-[38%] -translate-x-1/2"
+                      />
+                    )}
+                    {isLast && hasEmber && (
+                      <span aria-hidden className="pointer-events-none absolute inset-0">
+                        {SPARKS.map((s, i) => (
+                          <span
+                            key={i}
+                            style={{ "--dx": s.dx, "--dy": s.dy } as CSSProperties}
+                            className="absolute left-1/2 top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold animate-spark"
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* twine: each side ties its own embers together */}
+            {(redTrail.length >= 1 || blueTrail.length >= 1) && (
+              <svg
+                aria-hidden
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+              >
+                <StringTrail trail={redTrail} seat="red" />
+                <StringTrail trail={blueTrail} seat="black" />
+              </svg>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

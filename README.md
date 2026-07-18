@@ -6,7 +6,20 @@ Turn-based game web app. Frontend is React + Tailwind + shadcn; backend is Conve
 
 ## Status
 
-Greenfield. Design, modes, and **game rules** are settled under `.agents/rules/`.
+**Playable.** Engine + exact solver + local pass-and-play + **vs The Assayer** (solver-backed AI that narrates true deductions) are live. Online rooms/matchmaking via Convex are next.
+
+```bash
+npm install
+npm run dev        # play at localhost:5173
+npm test           # 18 engine/solver tests
+npm run typecheck
+```
+
+Demo deep links (seeded, reproducible): `/?play=lunch&seed=JUDGES-1` (quick variant) · add `&vs=agent` to face The Assayer.
+
+### Why the AI can't lie
+
+The secret formula space is exactly enumerable (layout-space BFS over bitboards, deduped — thousands of boards, not millions of expressions). The Assayer maintains every hypothesis consistent with public evidence and narrates only those facts — the narration is derived from an exact solver, so it cannot hallucinate the game. See [convex/engine/solver.ts](convex/engine/solver.ts).
 
 ## Intended structure
 
