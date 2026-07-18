@@ -15,6 +15,7 @@ import {
   ConfusingBrain,
   hasSeenForestIntro,
 } from "@/components/home/ConfusingBrain";
+import { NflTheoremStop } from "@/components/home/NflTheoremStop";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -135,6 +136,7 @@ export function Home({
           }}
         />
         <OrbitalHero />
+        <NflTheoremStop className="absolute right-0 top-2 z-10 sm:right-2 sm:top-4 md:right-4" />
       </main>
 
       <WarningSign className="absolute bottom-36 right-10 hidden md:block" />
