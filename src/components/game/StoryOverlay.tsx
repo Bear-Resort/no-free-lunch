@@ -17,11 +17,14 @@ export function StoryOverlay({
   beats,
   onDone,
   onSkip,
+  onBeat,
   skipLabel = "skip deposition",
 }: {
   beats: StoryBeat[];
   onDone: () => void;
   onSkip?: () => void;
+  /** Fires when a beat becomes current (including the first). */
+  onBeat?: (index: number) => void;
   skipLabel?: string;
 }) {
   const [i, setI] = useState(0);
@@ -34,6 +37,11 @@ export function StoryOverlay({
   useEffect(() => {
     setShown(0);
     setImgOk(true);
+  }, [i]);
+
+  useEffect(() => {
+    onBeat?.(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i]);
 
   useEffect(() => {

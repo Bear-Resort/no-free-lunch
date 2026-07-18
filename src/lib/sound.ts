@@ -14,7 +14,33 @@ export const isMuted = () => muted;
 export function setMuted(m: boolean) {
   muted = m;
   localStorage.setItem("nfl-muted", m ? "1" : "0");
-  if (m) stopAmbient();
+  if (m) {
+    stopAmbient();
+    stopHeartbeat();
+  }
+}
+
+/* A heartbeat that starts when James says the name, and quickens until
+   the door slams. Whose heart? That is the question. */
+let heartbeatTimer: number | null = null;
+
+export function startHeartbeat() {
+  if (muted || heartbeatTimer !== null) return;
+  let interval = 950;
+  const thump = () => {
+    tone(58, 0.12, "sine", 0.3);
+    tone(46, 0.1, "sine", 0.22, 0.16);
+    interval = Math.max(500, interval - 26); // the panic rises
+    heartbeatTimer = window.setTimeout(thump, interval);
+  };
+  thump();
+}
+
+export function stopHeartbeat() {
+  if (heartbeatTimer !== null) {
+    clearTimeout(heartbeatTimer);
+    heartbeatTimer = null;
+  }
 }
 
 /* A barely-there forest at night: looped brown noise through a slowly

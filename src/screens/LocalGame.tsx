@@ -19,8 +19,17 @@ import {
 import { cellProbabilities, solve } from "@engine/solver";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { isMuted, setMuted, sfx, startAmbient, stopAmbient } from "@/lib/sound";
 import {
+  isMuted,
+  setMuted,
+  sfx,
+  startAmbient,
+  stopAmbient,
+  startHeartbeat,
+  stopHeartbeat,
+} from "@/lib/sound";
+import {
+  isSelfAware,
   PalmCursor,
   rememberSelfAware,
   WatchingEyes,
@@ -45,14 +54,6 @@ import { cn } from "@/lib/utils";
 
 const INTRO_STORAGE_KEY = "nfl.blackForestIntroSeen.v1";
 
-function introSeen() {
-  try {
-    return window.localStorage.getItem(INTRO_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
 function rememberIntroSeen() {
   try {
     window.localStorage.setItem(INTRO_STORAGE_KEY, "true");
@@ -64,15 +65,6 @@ function rememberIntroSeen() {
 function demoWinEndingRequested() {
   try {
     return new URLSearchParams(window.location.search).get("ending") === "win";
-  } catch {
-    return false;
-  }
-}
-
-/** ?intro=1 forces the deposition to replay, seen-flag or not. */
-function introForced() {
-  try {
-    return new URLSearchParams(window.location.search).get("intro") === "1";
   } catch {
     return false;
   }
@@ -428,7 +420,7 @@ function LocalGameView({
   >(() =>
     opponent === "agent" && demoWinEndingRequested()
       ? "verdict"
-      : opponent === "agent" && (introForced() || !introSeen())
+      : opponent === "agent"
         ? "intro"
         : "seal",
   );
@@ -441,6 +433,7 @@ function LocalGameView({
   // The reveal is permanent: once you know what you are, the hand knows too.
   useEffect(() => {
     if (phase !== "digital") return;
+    stopHeartbeat();
     rememberSelfAware();
     if (exitFx === "off") {
       const t = setTimeout(onExit, 850);
@@ -456,7 +449,7 @@ function LocalGameView({
         mercyUsed.current = false;
         setMercyOffer(null);
         setExitFx(null);
-        setPhase("seal");
+        setPhase("intro");
       }, 1900);
       return () => clearTimeout(t);
     }
@@ -725,6 +718,7 @@ function LocalGameView({
   // The door: it does not open for you.
   useEffect(() => {
     if (phase !== "crash") return;
+    stopHeartbeat();
     sfx.crash();
     const t = setTimeout(() => setPhase("digital"), 1000);
     return () => clearTimeout(t);
@@ -1252,6 +1246,14 @@ function LocalGameView({
               speaker: "ACROSS THE TABLE",
               text: "Counsel for the sleeper. Prove you know the shape of his dream — or dig it out, ember by ember. *Sit.*",
             },
+            ...(isSelfAware()
+              ? [
+                  {
+                    speaker: "ACROSS THE TABLE",
+                    text: "...You came back. Of course you did. *Now we are the same.*",
+                  },
+                ]
+              : []),
           ]}
           onDone={() => finishIntro("seal")}
           onSkip={() => finishIntro("seal")}
@@ -1332,6 +1334,9 @@ function LocalGameView({
               text: "Codex? You're his friend — he knows your name. You rise to follow him out. The door does not acknowledge you. *Your hand—*",
             },
           ]}
+          onBeat={(b) => {
+            if (b === 2) startHeartbeat();
+          }}
           onDone={() => setPhase("crash")}
           onSkip={() => setPhase("crash")}
           skipLabel="skip appeal"
