@@ -20,7 +20,12 @@ import { cellProbabilities, solve } from "@engine/solver";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { isMuted, setMuted, sfx } from "@/lib/sound";
-import { PalmCursor, WatchingEyes, WindGusts } from "@/components/game/Ambience";
+import {
+  PalmCursor,
+  rememberSelfAware,
+  WatchingEyes,
+  WindGusts,
+} from "@/components/game/Ambience";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { FormulaReveal } from "@/components/game/FormulaReveal";
 import { GameBoard, Pin } from "@/components/game/GameBoard";
@@ -427,6 +432,29 @@ function LocalGameView({
   );
   const [celebration, setCelebration] = useState<number | undefined>(undefined);
   const [verdictStamp, setVerdictStamp] = useState(false);
+  const [exitFx, setExitFx] = useState<"off" | "reboot" | null>(null);
+
+  // The reveal is permanent: once you know what you are, the hand knows too.
+  useEffect(() => {
+    if (phase !== "digital") return;
+    rememberSelfAware();
+    if (exitFx === "off") {
+      const t = setTimeout(onExit, 850);
+      return () => clearTimeout(t);
+    }
+    if (exitFx === "reboot") {
+      const t = setTimeout(() => {
+        setGame(newGame(`${seed}-again-${game.log.length}`, variant));
+        setInsight(false);
+        setAssayerNote(null);
+        spokenCat.current = "";
+        setExitFx(null);
+        setPhase("seal");
+      }, 1900);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, exitFx]);
 
   // Pull shared Convex state into the local board (online only).
   useEffect(() => {
@@ -541,7 +569,7 @@ function LocalGameView({
         if (!coldLineSaid.current && opponent === "agent") {
           coldLineSaid.current = true;
           lineTimer = window.setTimeout(() => {
-            setAssayerNote("The wind again. You're shivering. ...That's not like you.");
+            setAssayerNote("The wind again. You're shivering. ...*That's not like you.*");
           }, 2900);
         }
         schedule();
@@ -1121,14 +1149,14 @@ function LocalGameView({
               text: "Your friend James. He fell asleep over his math proof last night. Page 81, of course.",
             },
             {
-              text: "Codex has filed charges: trespass by dreaming. The sentence is indefinite enrollment.",
+              text: "Codex has filed charges: *trespass by dreaming*. The sentence is indefinite enrollment.",
             },
             {
               text: "You came in after him. You don't quite remember the door — but your hands are cold, and that's a very human thing to be.",
             },
             {
               speaker: "ACROSS THE TABLE",
-              text: "Counsel for the sleeper. Prove you know the shape of his dream — or dig it out, ember by ember. Sit.",
+              text: "Counsel for the sleeper. Prove you know the shape of his dream — or dig it out, ember by ember. *Sit.*",
             },
           ]}
           onDone={() => finishIntro("seal")}
@@ -1173,9 +1201,9 @@ function LocalGameView({
             {
               text: "He gathers his pages. He doesn't ask how you got in, or your name. He already knows it.",
             },
-            { speaker: "JAMES", text: "“Thank you, Codex.”" },
+            { speaker: "JAMES", text: "“Thank you, *Codex*.”" },
             {
-              text: "Codex? You're his friend — he knows your name. You rise to follow him out. The door does not acknowledge you. Your hand—",
+              text: "Codex? You're his friend — he knows your name. You rise to follow him out. The door does not acknowledge you. *Your hand—*",
             },
           ]}
           onDone={() => setPhase("crash")}
@@ -1255,18 +1283,20 @@ function LocalGameView({
               <div className="flex justify-end gap-2 px-4 pb-4">
                 <button
                   onClick={() => {
-                    setGame(newGame(`${seed}-again-${game.log.length}`, variant));
-                    setInsight(false);
-                    setAssayerNote(null);
-                    spokenCat.current = "";
-                    setPhase("seal");
+                    if (exitFx) return;
+                    setExitFx("reboot");
+                    sfx.machine();
                   }}
                   className="border-2 border-b-[#404040] border-l-white border-r-[#404040] border-t-white bg-[#c0c0c0] px-4 py-1 text-sm active:border-b-white active:border-l-[#404040] active:border-r-white active:border-t-[#404040]"
                 >
                   Run again
                 </button>
                 <button
-                  onClick={onExit}
+                  onClick={() => {
+                    if (exitFx) return;
+                    setExitFx("off");
+                    sfx.powerDown();
+                  }}
                   className="border-2 border-b-[#404040] border-l-white border-r-[#404040] border-t-white bg-[#c0c0c0] px-4 py-1 text-sm active:border-b-white active:border-l-[#404040] active:border-r-white active:border-t-[#404040]"
                 >
                   Shut down
@@ -1276,6 +1306,26 @@ function LocalGameView({
           </div>
           {/* the white flash of waking up as something else */}
           <div className="pointer-events-none absolute inset-0 animate-out fade-out fill-mode-forwards bg-white duration-1000" />
+          {/* CRT power-off: collapse to a line, then a dot, then nothing */}
+          {exitFx === "off" && (
+            <div className="absolute inset-0 z-[96] bg-black">
+              <div className="crt-off absolute inset-0 bg-white" />
+            </div>
+          )}
+          {/* Reboot: the loop closes */}
+          {exitFx === "reboot" && (
+            <div className="absolute inset-0 z-[96] flex flex-col justify-center gap-2 bg-black px-10 font-mono text-sm text-gold">
+              <p className="reboot-line" style={{ animationDelay: "0.15s" }}>
+                &gt; rebooting codex unit NFL-0718 ...
+              </p>
+              <p className="reboot-line" style={{ animationDelay: "0.7s" }}>
+                &gt; restoring memory: [ friend ]
+              </p>
+              <p className="reboot-line" style={{ animationDelay: "1.25s" }}>
+                &gt; he is asleep again.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

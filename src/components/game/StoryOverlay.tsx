@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { sfx } from "@/lib/sound";
 import { WatchingEyes } from "./Ambience";
+import { EmText, emStartsAt, parseEm } from "./EmText";
 
 export interface StoryBeat {
   img?: string;
@@ -27,7 +28,8 @@ export function StoryOverlay({
   const [shown, setShown] = useState(0);
   const [imgOk, setImgOk] = useState(true);
   const beat = beats[i];
-  const complete = shown >= beat.text.length;
+  const chars = useMemo(() => parseEm(beat.text), [beat.text]);
+  const complete = shown >= chars.length;
 
   useEffect(() => {
     setShown(0);
@@ -40,17 +42,26 @@ export function StoryOverlay({
     return () => clearInterval(t);
   }, [complete, i]);
 
-  // Each speaker gets a voice: the student chirps, the thing rumbles.
+  // Each speaker gets a voice; emphasized words land with a thud.
   useEffect(() => {
     if (shown === 0 || complete) return;
-    const ch = beat.text[shown - 1];
+    const c = chars[shown - 1];
+    if (!c) return;
+    if (emStartsAt(chars, shown)) {
+      sfx.drill();
+      return;
+    }
     const pitch =
-      beat.speaker === "THE STUDENT" ? 430 : beat.speaker ? 220 : 300;
-    if (ch !== " " && shown % 2 === 0) sfx.blip(pitch);
-  }, [shown, complete, beat]);
+      (beat.speaker === "JAMES" || beat.speaker === "THE STUDENT"
+        ? 430
+        : beat.speaker
+          ? 220
+          : 300) + (c.em ? 90 : 0);
+    if (c.ch !== " " && shown % 2 === 0) sfx.blip(pitch);
+  }, [shown, complete, beat, chars]);
 
   const advance = () => {
-    if (!complete) setShown(beat.text.length);
+    if (!complete) setShown(chars.length);
     else if (i < beats.length - 1) setI(i + 1);
     else onDone();
   };
@@ -96,7 +107,7 @@ export function StoryOverlay({
           />
         )}
         <div className="font-pixel text-2xl leading-tight text-ink">
-          {beat.text.slice(0, shown)}
+          <EmText chars={chars} shown={shown} />
           {complete && <span className="caret-blink text-gold">▏</span>}
         </div>
         <div className="mt-4 text-right font-pixel text-sm text-ink-muted">

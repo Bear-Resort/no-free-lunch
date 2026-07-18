@@ -83,6 +83,11 @@ export const sfx = {
     tone(590, 0.65, "sawtooth", 0.06, 0.05, 170);
     tone(940, 0.5, "square", 0.03, 0.02, 320);
   },
+  /** CRT giving up the ghost. */
+  powerDown() {
+    tone(420, 0.7, "sawtooth", 0.08, 0, 42);
+    tone(210, 0.85, "sine", 0.12, 0.05, 30);
+  },
   /** The door refuses you — a heavy slam through the floorboards. */
   crash() {
     if (muted) return;
