@@ -1,0 +1,51 @@
+# Deploys Convex production functions and builds the Vite frontend with the
+# production Convex URL injected as VITE_CONVEX_URL.
+#
+# Required secret (repo → Settings → Secrets and variables → Actions):
+#   CONVEX_DEPLOY_KEY
+#
+# Create it in Convex Dashboard → your project → Production deployment →
+# Settings → Deploy Keys → Generate Production Deploy Key
+# (enable deployment:deploy). Paste the full key value into GitHub.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Convex + frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Deploy Convex & build frontend
+        run: >
+          npx convex deploy
+          --yes
+          --cmd 'npm run build'
+          --cmd-url-env-var-name VITE_CONVEX_URL
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+      - name: Upload static site
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error

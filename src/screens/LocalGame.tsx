@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { chooseMove, type AgentDecision } from "@engine/ai";
 import type { Variant } from "@engine/generation";
@@ -15,6 +16,8 @@ import {
   type TurnRecord,
 } from "@engine/rules";
 import { cellProbabilities, solve } from "@engine/solver";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { isMuted, setMuted, sfx } from "@/lib/sound";
 import { PalmCursor, WindGusts } from "@/components/game/Ambience";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
@@ -188,11 +191,20 @@ export function LocalGame({
   seed,
   variant,
   opponent = "human",
+  mySeat,
+  online,
   onExit,
 }: {
   seed: string;
   variant: Variant;
   opponent?: "human" | "agent";
+  /** Online: only this seat may act when it is their turn. */
+  mySeat?: Seat;
+  /** When set, moves go through Convex and state is synced. */
+  online?: {
+    gameId: Id<"onlineGames">;
+    playerId: string;
+  };
   onExit: () => void;
 }) {
   const [game, setGame] = useState<Game>(() => newGame(seed, variant));
@@ -204,16 +216,49 @@ export function LocalGame({
   const [assayerNote, setAssayerNote] = useState<string | null>(null);
   const [mute, setMute] = useState(isMuted);
   const [wind, setWind] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
   const coldLineSaid = useRef(false);
   const spokenCat = useRef("");
+  const lastLogLen = useRef(0);
   const [phase, setPhase] = useState<
     "intro" | "seal" | "play" | "outro" | "digital" | "answer" | "failed"
   >(opponent === "agent" ? "intro" : "seal");
+
+  const remoteState = useQuery(
+    api.onlinePlay.getEngineState,
+    online ? { gameId: online.gameId, playerId: online.playerId } : "skip",
+  );
+  const playDrill = useMutation(api.onlinePlay.playDrill);
+  const playAttempt = useMutation(api.onlinePlay.playAttempt);
+  const forfeitGame = useMutation(api.online.forfeitGame);
+
+  // Pull shared Convex state into the local board (online only).
+  useEffect(() => {
+    if (!online || !remoteState?.stateJson) return;
+    const next = JSON.parse(remoteState.stateJson) as Game;
+    if (next.log.length > lastLogLen.current) {
+      const rec = next.log[next.log.length - 1];
+      if (rec?.action === "drill") {
+        if (rec.struckGold) sfx.gold();
+        else sfx.drill();
+      } else if (rec?.action === "attempt" && !rec.correct) {
+        sfx.bad();
+        setAttemptResult(rec);
+      }
+      if (next.status === "finished") sfx.win();
+    }
+    lastLogLen.current = next.log.length;
+    setGame(next);
+  }, [online, remoteState?.stateJson]);
 
   const seat = seatForTurn(game.turn);
   const revealed = revealedMaps(game);
   const isAgentTurn =
     opponent === "agent" && seat === "black" && game.status === "active";
+  const isMyTurn =
+    game.status === "active" &&
+    (mySeat === undefined || mySeat === seat) &&
+    !isAgentTurn;
 
   const names: Record<Seat, string> = {
     red: "Red",
@@ -335,14 +380,31 @@ export function LocalGame({
   }, [insight, game]);
 
   const onDrill = (cell: number) => {
-    if (game.status !== "active" || isAgentTurn) return;
+    if (game.status !== "active" || isAgentTurn || !isMyTurn) return;
+    if (online) {
+      void playDrill({
+        gameId: online.gameId,
+        playerId: online.playerId,
+        cell,
+      });
+      return;
+    }
     applyMove(drill(game, cell));
   };
 
   const onAttempt = (steps: Step[]) => {
+    if (!isMyTurn) return;
     const run = runProgram(steps, revealed, game.variant.machineBudget);
     if (!run.ok) return;
     setBenchOpen(false);
+    if (online) {
+      void playAttempt({
+        gameId: online.gameId,
+        playerId: online.playerId,
+        layout: [...run.out],
+      });
+      return;
+    }
     const next = attempt(game, run.out);
     applyMove(next);
     const record = next.log[next.log.length - 1];
@@ -350,6 +412,18 @@ export function LocalGame({
   };
 
   const lastEvents = [...game.log].slice(-4).reverse();
+
+  /** Near seat sits under the board (you); far seat is across the table. */
+  const nearSeat: Seat = mySeat ?? "red";
+  const farSeat: Seat = nearSeat === "red" ? "black" : "red";
+
+  const requestExit = () => {
+    if (online && game.status === "active") {
+      setConfirmExit(true);
+      return;
+    }
+    onExit();
+  };
 
   return (
     <div
@@ -362,7 +436,7 @@ export function LocalGame({
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onExit} aria-label="leave game">
+          <Button variant="ghost" size="icon" onClick={requestExit} aria-label="leave game">
             <ArrowLeft className="size-4" />
           </Button>
           <h1 className="font-display text-xs font-bold uppercase tracking-[0.3em]">
@@ -393,26 +467,32 @@ export function LocalGame({
         <div className="flex flex-col items-center gap-3 lg:flex-1">
           <div className="w-full max-w-[720px]">
             <PlayerPlate
-              seat="black"
-              name={names.black}
-              score={game.scores.black}
-              active={seat === "black" && game.status === "active"}
-              eyes={opponent === "agent"}
+              seat={farSeat}
+              name={names[farSeat]}
+              score={game.scores[farSeat]}
+              active={seat === farSeat && game.status === "active"}
+              eyes={opponent === "agent" && farSeat === "black"}
             />
           </div>
           <GameBoard
             game={game}
             heat={heat?.probs ?? null}
-            disabled={benchOpen}
+            disabled={benchOpen || !isMyTurn}
             onDrill={onDrill}
             onHoverCell={setHoverCell}
           />
+          {mySeat !== undefined && game.status === "active" && !isMyTurn && (
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
+              Waiting for {names[seat]}…
+            </p>
+          )}
           <div className="w-full max-w-[720px]">
             <PlayerPlate
-              seat="red"
-              name={names.red}
-              score={game.scores.red}
-              active={seat === "red" && game.status === "active"}
+              seat={nearSeat}
+              name={names[nearSeat]}
+              score={game.scores[nearSeat]}
+              active={seat === nearSeat && game.status === "active"}
+              eyes={opponent === "agent" && nearSeat === "black"}
             />
           </div>
         </div>
@@ -422,7 +502,7 @@ export function LocalGame({
             <DesktopIcon
               glyph="📁"
               label="theory.fld"
-              disabled={game.status !== "active" || isAgentTurn}
+              disabled={game.status !== "active" || isAgentTurn || !isMyTurn}
               onClick={() => setBenchOpen(true)}
             />
             <DesktopIcon
@@ -515,6 +595,43 @@ export function LocalGame({
         onSubmit={onAttempt}
       />
 
+      {/* Leave online game reminder */}
+      <Dialog open={confirmExit} onOpenChange={setConfirmExit}>
+        <DialogContent className="max-w-sm">
+          <DialogTitle>Leave the exam?</DialogTitle>
+          <DialogDescription>
+            If you exit now, your opponent wins by forfeit and Codex closes your
+            docket. This cannot be undone.
+          </DialogDescription>
+          <div className="mt-5 flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setConfirmExit(false)}
+            >
+              Stay
+            </Button>
+            <Button
+              className="flex-1"
+              variant="default"
+              onClick={() => {
+                setConfirmExit(false);
+                if (online) {
+                  void forfeitGame({
+                    gameId: online.gameId,
+                    playerId: online.playerId,
+                  }).finally(() => onExit());
+                } else {
+                  onExit();
+                }
+              }}
+            >
+              Leave anyway
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Map reveal moment */}
       <Dialog open={revealNote !== null} onOpenChange={() => setRevealNote(null)}>
         <DialogContent className="max-w-sm text-center" hideClose>
@@ -604,6 +721,10 @@ export function LocalGame({
               `All ${game.goldTotal} embers recovered. Final score ${game.scores.red}–${game.scores.black}. Codex calls this proof by excavation.`}
             {game.winReason === "cap" &&
               `Turn cap reached. Final score ${game.scores.red}–${game.scores.black}. The exam bell was a shovel hitting bone.`}
+            {game.winReason === "forfeit" &&
+              (mySeat && game.winner === mySeat
+                ? "Your opponent left the table. Codex rules in your favor by forfeit."
+                : "You left the table. Codex awards the remaining student the case.")}
           </DialogDescription>
           <div className="mt-5">
             <FormulaReveal
@@ -619,18 +740,20 @@ export function LocalGame({
             <Button variant="secondary" className="flex-1" onClick={onExit}>
               Home
             </Button>
-            <Button
-              className="flex-1"
-              onClick={() => {
-                setGame(newGame(`${seed}-${game.log.length}-r`, variant));
-                setInsight(false);
-                setAssayerNote(null);
-                spokenCat.current = "";
-                setPhase("seal");
-              }}
-            >
-              Rematch
-            </Button>
+            {!online && (
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  setGame(newGame(`${seed}-${game.log.length}-r`, variant));
+                  setInsight(false);
+                  setAssayerNote(null);
+                  spokenCat.current = "";
+                  setPhase("seal");
+                }}
+              >
+                Rematch
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

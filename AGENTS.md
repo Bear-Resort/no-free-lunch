@@ -54,11 +54,14 @@ Scaffold the app when implementation starts; match this layout unless the user c
 
 ```bash
 npm install
-npm run dev          # Vite frontend (local + vs-agent modes work without Convex)
-npm test             # Vitest — engine/solver suite must stay green
-npm run typecheck    # strict TS
-npx convex dev       # Convex — development only, never deploy for local work
+cp .env.sample .env.local   # fill after `npx convex dev`
+npm run dev                 # Vite frontend
+npm run dev:backend         # npx convex dev — never deploy for local work
+npm test
+npm run typecheck
 ```
+
+**Online capacity:** max **15** concurrent waiting+active games (`convex/lib/capacity.ts`). Over capacity → busy; suggest Assayer.
 
 ## Architecture note
 

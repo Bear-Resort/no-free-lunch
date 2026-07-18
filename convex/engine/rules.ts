@@ -42,7 +42,7 @@ export interface Game {
   log: TurnRecord[];
   status: "active" | "finished";
   winner?: Seat | "tie";
-  winReason?: "map" | "score" | "cap";
+  winReason?: "map" | "score" | "cap" | "forfeit";
 }
 
 export function newGame(seed: string, variant: Variant = STANDARD): Game {

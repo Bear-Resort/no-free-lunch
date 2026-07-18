@@ -4,6 +4,7 @@ import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { GoldDust } from "@/components/game/GoldDust";
 import { FloatingCode, WarningSign } from "@/components/home/ForestSigns";
+import { OnlineLobby, type OnlineReady } from "@/components/home/OnlineLobby";
 import { OrbitalHero } from "@/components/home/OrbitalHero";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,10 +35,16 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
 /** The clearing at the edge of the black forest — first screen. */
 export function Home({
   onStart,
+  onOnlineReady,
+  convexReady,
 }: {
   onStart: (variant: Variant, opponent: Opponent) => void;
+  onOnlineReady: (session: OnlineReady) => void;
+  /** False when VITE_CONVEX_URL is missing — online stays disabled. */
+  convexReady: boolean;
 }) {
   const [picking, setPicking] = useState<Opponent | null>(null);
+  const [onlineOpen, setOnlineOpen] = useState(false);
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden px-6 py-5 sm:px-10">
@@ -45,7 +52,6 @@ export function Home({
       <GoldDust />
       <FloatingCode />
 
-      {/* Top bar */}
       <header className="relative flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Pickaxe className="size-4 text-gold" />
@@ -58,14 +64,12 @@ export function Home({
         </span>
       </header>
 
-      {/* Center: the gilded map-cross burning in the dark */}
       <main className="relative flex flex-1 items-center justify-center py-8">
         <OrbitalHero />
       </main>
 
       <WarningSign className="absolute bottom-36 right-10 hidden md:block" />
 
-      {/* Bottom bar: stats · CTA · modes */}
       <footer className="relative grid items-end gap-6 sm:grid-cols-3">
         <div className="flex gap-8">
           <Stat label="Hidden truth" value="3,630,455" sub="possible formulas" />
@@ -97,9 +101,19 @@ export function Home({
           >
             Shared nightmare
           </button>
-          <span className="cursor-default text-ink-muted/50">
-            Online · soon
-          </span>
+          <button
+            type="button"
+            disabled={!convexReady}
+            onClick={() => setOnlineOpen(true)}
+            className="text-ink-muted transition-colors hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+            title={
+              convexReady
+                ? "Random pair or friend room"
+                : "Set VITE_CONVEX_URL in .env.local"
+            }
+          >
+            Online · random / friend
+          </button>
         </nav>
       </footer>
 
@@ -115,9 +129,7 @@ export function Home({
           </DialogDescription>
 
           <div className="mt-5 flex flex-col gap-2">
-            <Button
-              onClick={() => onStart(LUNCH_BREAK, picking ?? "human")}
-            >
+            <Button onClick={() => onStart(LUNCH_BREAK, picking ?? "human")}>
               Lunch Break — a small academic haunting
             </Button>
             <Button
@@ -129,6 +141,17 @@ export function Home({
           </div>
         </DialogContent>
       </Dialog>
+
+      {convexReady && (
+        <OnlineLobby
+          open={onlineOpen}
+          onClose={() => setOnlineOpen(false)}
+          onReady={(session) => {
+            setOnlineOpen(false);
+            onOnlineReady(session);
+          }}
+        />
+      )}
     </div>
   );
 }

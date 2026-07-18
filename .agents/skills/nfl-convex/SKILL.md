@@ -22,20 +22,21 @@ description: >-
 ## Hard requirements
 
 - Public `query` / `mutation` / `action`: define `args` and `returns` validators
-- Auth checks for user-owned or multiplayer data via `ctx.auth.getUserIdentity()` (or project auth helpers)
 - Prefer indexes + `withIndex` over `.filter()`
 - Await all Convex promises
 - Schedule only `internal.*` functions
 - No `Date.now()` inside queries
+- **Capacity:** at most **15** online games with status `waiting` or `active`. Creating beyond that throws `BUSY_MESSAGE` (tell the user to play vs Assayer). Joining an existing friend room does not create a new slot.
 
-## Suggested tables (adjust when rules arrive)
+## Online API (`convex/online.ts`)
 
-- `games` — mode, status, turn, players, optional roomCode
-- `rooms` or room fields on `games` — code, host, open/closed
-- `matchQueue` — random pair waiting players (if needed)
-- `players` / membership — seat, userId or local seat index
+- `createFriendRoom` → 4-digit `roomCode`, host waits
+- `joinFriendRoom` → by code; starts engine state
+- `joinRandomQueue` / `leaveRandomQueue` → matchmaking
+- `getCapacity` / `getLobby` / `findMyActiveGame` → lobby UI
+- `cancelFriendRoom` / `abandonGame` → free slots
 
-Keep documents flat and relational; index foreign keys and `roomCode`.
+Identity: anonymous `playerId` (UUID in localStorage) until full Convex auth is added.
 
 ## Workflow
 
