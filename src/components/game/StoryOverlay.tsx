@@ -14,9 +14,13 @@ export interface StoryBeat {
 export function StoryOverlay({
   beats,
   onDone,
+  onSkip,
+  skipLabel = "skip deposition",
 }: {
   beats: StoryBeat[];
   onDone: () => void;
+  onSkip?: () => void;
+  skipLabel?: string;
 }) {
   const [i, setI] = useState(0);
   const [shown, setShown] = useState(0);
@@ -51,11 +55,28 @@ export function StoryOverlay({
   };
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={advance}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") advance();
+      }}
       className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center bg-black/90 p-6 outline-none backdrop-blur-sm animate-in fade-in duration-500"
     >
       <div className="relative w-[min(92vw,540px)] border-2 border-ink bg-[#0d100a] px-6 py-6 text-left shadow-[0_0_0_4px_#0d100a,0_0_60px_rgba(227,161,62,0.15)]">
+        {onSkip && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onSkip();
+            }}
+            className="absolute right-3 top-3 border border-ink-muted/40 px-2 py-0.5 font-pixel text-sm uppercase leading-none text-ink-muted transition-colors hover:border-gold hover:text-gold"
+          >
+            {skipLabel}
+          </button>
+        )}
         {beat.speaker && (
           <span className="absolute -top-3 left-4 bg-[#0d100a] px-2 font-pixel text-base leading-none text-gold">
             {beat.speaker}
@@ -77,6 +98,6 @@ export function StoryOverlay({
           {i < beats.length - 1 || !complete ? "click ▼" : "click to continue"}
         </div>
       </div>
-    </button>
+    </div>
   );
 }

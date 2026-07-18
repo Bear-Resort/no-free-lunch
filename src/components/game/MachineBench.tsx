@@ -57,12 +57,14 @@ export function MachineBench({
   onOpenChange,
   revealed,
   budget,
+  nextRevealTurn,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   revealed: BB[];
   budget: number;
+  nextRevealTurn?: number;
   onSubmit: (steps: Step[]) => void;
 }) {
   const [steps, setSteps] = useState<Step[]>([]);
@@ -87,6 +89,7 @@ export function MachineBench({
     selA !== null && selB !== null && op !== null
       ? applyOp(op, pool[selA], pool[selB])
       : null;
+  const canCombine = pool.length >= 2;
 
   const reset = () => {
     setSteps([]);
@@ -191,8 +194,17 @@ export function MachineBench({
             </div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,246,210,.5),transparent_34%),repeating-linear-gradient(2deg,rgba(42,33,24,.12)_0_1px,transparent_1px_18px)]" />
             <div className="absolute bottom-4 left-5 max-w-[340px] rotate-[-1deg] border border-ink/20 bg-[#f8edcf]/80 p-3 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-[#5c5140] shadow-md">
-              Drag the scraps. Click two to mark A and B. Codex accepts neat
-              reasoning, but never rewards neat desks.
+              {canCombine ? (
+                <>
+                  Drag the scraps. Click two to mark A and B. Codex accepts neat
+                  reasoning, but never rewards neat desks.
+                </>
+              ) : (
+                <>
+                  One witness cannot contradict itself. Drill until the folder
+                  coughs up exhibit M2{nextRevealTurn ? ` after turn ${nextRevealTurn}` : ""}.
+                </>
+              )}
             </div>
 
             {pool.map((bb, i) => {
@@ -251,6 +263,18 @@ export function MachineBench({
                 Combine two scraps. Spend power. Submit the last output as your
                 theory, and hope the forest grades on a curve.
               </DialogDescription>
+              {!canCombine && (
+                <div className="mt-3 rotate-[-1deg] border border-danger/35 bg-[#f8edcf] p-2 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-[#5c5140] shadow-sm">
+                  Memo from Codex: your folder contains one exhibit and a large
+                  amount of confidence. This is legally insufficient.
+                  {nextRevealTurn && (
+                    <>
+                      {" "}
+                      Exhibit M2 unseals after turn {nextRevealTurn}.
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -276,6 +300,7 @@ export function MachineBench({
                   key={o}
                   size="sm"
                   variant={op === o ? "default" : "secondary"}
+                  disabled={!canCombine}
                   onClick={() => setOp(o)}
                 >
                   {o}
@@ -286,6 +311,7 @@ export function MachineBench({
             <Button
               variant="gold"
               disabled={
+                !canCombine ||
                 selA === null ||
                 selB === null ||
                 op === null ||
@@ -293,7 +319,8 @@ export function MachineBench({
               }
               onClick={runMachine}
             >
-              <Hammer className="size-4" /> Run the dubious machine
+              <Hammer className="size-4" />{" "}
+              {canCombine ? "Run the dubious machine" : "Await second exhibit"}
             </Button>
 
             {steps.length > 0 && (
@@ -318,7 +345,9 @@ export function MachineBench({
                   ? `Preview: ${label(selA!)} ${op} ${label(selB!)}`
                   : steps.length > 0
                     ? `Latest output: ${label(pool.length - 1)}`
-                    : "No theory yet"}
+                    : canCombine
+                      ? "No theory yet"
+                      : "One scrap on record"}
               </div>
               <div className="mt-2">
                 <MiniGrid
