@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Pickaxe } from "lucide-react";
 import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
@@ -11,6 +11,10 @@ import {
 } from "@/components/home/ModeArt";
 import { OnlineLobby, type OnlineReady } from "@/components/home/OnlineLobby";
 import { OrbitalHero } from "@/components/home/OrbitalHero";
+import {
+  ConfusingBrain,
+  hasSeenForestIntro,
+} from "@/components/home/ConfusingBrain";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -74,6 +78,12 @@ export function Home({
   const [picking, setPicking] = useState<Opponent | null>(null);
   const [onlineOpen, setOnlineOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
+  const [nudgeBrain, setNudgeBrain] = useState(false);
+
+  useEffect(() => {
+    setIntroDone(hasSeenForestIntro());
+  }, []);
 
   function chooseLocal(opponent: Opponent) {
     setModeOpen(false);
@@ -84,6 +94,14 @@ export function Home({
     if (!convexReady) return;
     setModeOpen(false);
     setOnlineOpen(true);
+  }
+
+  function onEnterForest() {
+    if (!introDone) {
+      setNudgeBrain(true);
+      return;
+    }
+    setModeOpen(true);
   }
 
   return (
@@ -105,6 +123,17 @@ export function Home({
       </header>
 
       <main className="relative flex flex-1 items-center justify-center py-8">
+        <ConfusingBrain
+          className="absolute left-0 top-2 z-10 sm:left-2 sm:top-4 md:left-4"
+          nudge={nudgeBrain}
+          onIntroComplete={() => {
+            setIntroDone(true);
+            setNudgeBrain(false);
+          }}
+          onOpenChange={(open) => {
+            if (open) setNudgeBrain(false);
+          }}
+        />
         <OrbitalHero />
       </main>
 
@@ -119,11 +148,27 @@ export function Home({
         <div className="flex flex-col items-start sm:items-center">
           <button
             type="button"
-            onClick={() => setModeOpen(true)}
-            className="border-2 border-ink/60 bg-transparent px-10 py-4 text-sm font-bold uppercase tracking-[0.3em] text-ink transition-all hover:border-gold hover:bg-gold hover:text-[#1a140a]"
+            aria-disabled={!introDone}
+            title={
+              introDone
+                ? "Choose how to play"
+                : "Finish the confusing brain walkthrough first"
+            }
+            onClick={onEnterForest}
+            className={cn(
+              "border-2 px-10 py-4 text-sm font-bold uppercase tracking-[0.3em] transition-all",
+              introDone
+                ? "border-ink/60 bg-transparent text-ink hover:border-gold hover:bg-gold hover:text-[#1a140a]"
+                : "cursor-not-allowed border-ink/30 bg-transparent text-ink-muted/45",
+            )}
           >
             Enter the forest
           </button>
+          {!introDone && (
+            <p className="mt-2 max-w-[16rem] text-center font-mono text-[10px] tracking-[0.1em] text-ink-muted/70">
+              The brain speaks first.
+            </p>
+          )}
         </div>
 
         <div className="flex justify-start sm:justify-end">
