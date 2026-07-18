@@ -56,10 +56,6 @@ export function PixelDialog({
 
   return (
     <>
-      {/* something in the room leans closer while it speaks */}
-      <span className="pointer-events-none fixed left-1/2 top-[36%] z-[35] -translate-x-1/2 opacity-15 animate-in fade-in duration-1000">
-        <WatchingEyes size={26} />
-      </span>
       <button
       onClick={() => (complete ? onDismiss() : setShown(chars.length))}
       className={
@@ -71,6 +67,9 @@ export function PixelDialog({
     >
       <span className="absolute -top-3 left-4 bg-[#0d100a] px-2 font-pixel text-base leading-none text-gold">
         {speaker}
+      </span>
+      <span className="pointer-events-none absolute -top-9 right-6 opacity-35">
+        <WatchingEyes size={11} />
       </span>
       <span className="font-pixel text-2xl leading-tight text-ink">
         <EmText chars={chars} shown={shown} />

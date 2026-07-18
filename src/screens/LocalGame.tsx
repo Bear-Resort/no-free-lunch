@@ -435,6 +435,8 @@ function LocalGameView({
   const [celebration, setCelebration] = useState<number | undefined>(undefined);
   const [verdictStamp, setVerdictStamp] = useState(false);
   const [exitFx, setExitFx] = useState<"off" | "reboot" | null>(null);
+  const [mercyOffer, setMercyOffer] = useState<AgentDecision | null>(null);
+  const mercyUsed = useRef(false);
 
   // The reveal is permanent: once you know what you are, the hand knows too.
   useEffect(() => {
@@ -451,6 +453,8 @@ function LocalGameView({
         setAssayerNote(null);
         spokenCat.current = "";
         milestonesSaid.current.clear();
+        mercyUsed.current = false;
+        setMercyOffer(null);
         setExitFx(null);
         setPhase("seal");
       }, 1900);
@@ -518,10 +522,20 @@ function LocalGameView({
 
   // The Assayer takes its turn after a beat; paused while a dialog has focus.
   useEffect(() => {
-    if (phase !== "play") return;
+    if (phase !== "play" || mercyOffer !== null) return;
     if (!isAgentTurn || revealNote !== null || attemptResult !== null) return;
     const timer = setTimeout(() => {
       const decision = chooseMove(game, { fallible: difficulty === "fair" });
+      // The mercy round: before its first winning submission, it offers
+      // you the choice. Once per night.
+      if (
+        decision.move.kind === "attempt" &&
+        decision.telemetry.candidates === 1 &&
+        !mercyUsed.current
+      ) {
+        setMercyOffer(decision);
+        return;
+      }
       let next: Game;
       if (decision.move.kind === "drill") {
         next = drill(game, decision.move.cell);
@@ -557,6 +571,34 @@ function LocalGameView({
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, isAgentTurn, revealNote, attemptResult, phase]);
+
+  /** The mercy round resolves: it ends the night, or grants one more turn. */
+  const resolveMercy = (grant: boolean) => {
+    const decision = mercyOffer;
+    if (!decision) return;
+    mercyUsed.current = true;
+    setMercyOffer(null);
+    if (!grant) {
+      if (decision.move.kind !== "attempt") return;
+      const run = runProgram(
+        decision.move.steps,
+        revealedMaps(game),
+        game.variant.machineBudget,
+      );
+      if (!run.ok) return;
+      const next = attempt(game, run.out);
+      const record = next.log[next.log.length - 1];
+      if (!record.correct) setAttemptResult(record);
+      applyMove(next);
+      return;
+    }
+    // Granted: it digs instead of naming the dream, exactly once.
+    const alt = chooseMove(game, { holdFire: true });
+    if (alt.move.kind === "drill") applyMove(drill(game, alt.move.cell));
+    setAssayerNote(
+      "Interesting. *You are me, but different.* One round, counsel. Spend it well.",
+    );
+  };
 
   // The forest hums, faintly, until the machine world takes over.
   useEffect(() => {
@@ -1217,6 +1259,38 @@ function LocalGameView({
         />
       )}
       {phase === "seal" && <CaseOpenedSeal onDone={() => setPhase("play")} />}
+
+      {/* The mercy round: it could end the night right now. It asks first. */}
+      {mercyOffer !== null && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm animate-in fade-in duration-300">
+          <WatchingEyes
+            size={18}
+            className="absolute left-1/2 top-[12%] -translate-x-1/2 opacity-30"
+          />
+          <div className="relative w-[min(92vw,560px)] border-2 border-ink bg-[#0d100a] px-6 py-6 shadow-[0_0_0_4px_#0d100a,0_0_60px_rgba(227,161,62,0.12)]">
+            <span className="absolute -top-3 left-4 bg-[#0d100a] px-2 font-pixel text-base leading-none text-gold">
+              ACROSS THE TABLE
+            </span>
+            <p className="font-pixel text-2xl leading-tight text-ink">
+              <span className="story-em">One shape remains.</span> I am ready to
+              name the dream and end the night. Any final words, counsel?
+            </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => resolveMercy(false)}
+              >
+                Let it end
+              </Button>
+              <Button className="flex-1" onClick={() => resolveMercy(true)}>
+                "...one more round. Please."
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {phase === "verdict" && (
         <>
           {/* the room recedes; the eyes across the table close */}

@@ -29,6 +29,8 @@ export interface AgentOptions {
    * Default (false) is the merciless exact policy — tests rely on it.
    */
   fallible?: boolean;
+  /** Never submit this turn — used for the mercy round. */
+  holdFire?: boolean;
 }
 
 export function chooseMove(g: Game, opts: AgentOptions = {}): AgentDecision {
@@ -51,6 +53,8 @@ export function chooseMove(g: Game, opts: AgentOptions = {}): AgentDecision {
   if (shouldSubmit && fallible && turnsLeft > 6 && Math.random() < 0.45) {
     shouldSubmit = false;
   }
+
+  if (opts.holdFire) shouldSubmit = false;
 
   if (shouldSubmit) {
     const layout = candidates[0];
