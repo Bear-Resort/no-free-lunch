@@ -40,16 +40,41 @@ export function MiniGrid({
   cellSize = 5,
   activeClass = "bg-accent",
   className,
+  highlightCell = null,
+  /** How to paint the synced hover cell. */
+  highlightKind = "prospect",
+  /** High-contrast gutters + fuller marks — better at small sizes. */
+  clear = false,
 }: {
   bb: BB;
   cellSize?: number;
   activeClass?: string;
   className?: string;
+  /** Board cell index (0–80) to ring — e.g. sync with GameBoard hover. */
+  highlightCell?: number | null;
+  highlightKind?: "prospect" | "drilled-red" | "drilled-black";
+  clear?: boolean;
 }) {
+  const highlightClass =
+    highlightKind === "drilled-red"
+      ? clear
+        ? "z-[1] scale-110 bg-[rgba(207,70,49,0.85)] ring-1 ring-inset ring-[#f2a091] animate-in zoom-in-75 duration-200"
+        : "z-[1] scale-110 border-[#cf4631] bg-[rgba(207,70,49,0.55)] shadow-[0_0_0_1px_rgba(242,160,145,0.95)] animate-in zoom-in-75 duration-200"
+      : highlightKind === "drilled-black"
+        ? clear
+          ? "z-[1] scale-110 bg-[rgba(91,130,192,0.85)] ring-1 ring-inset ring-[#9db8e8] animate-in zoom-in-75 duration-200"
+          : "z-[1] scale-110 border-[#5b82c0] bg-[rgba(91,130,192,0.55)] shadow-[0_0_0_1px_rgba(157,184,232,0.95)] animate-in zoom-in-75 duration-200"
+        : clear
+          ? "z-[1] scale-110 bg-[rgba(227,161,62,0.8)] ring-1 ring-inset ring-gold animate-in zoom-in-75 duration-200"
+          : "z-[1] scale-110 border-gold bg-[rgba(227,161,62,0.5)] shadow-[0_0_0_1px_rgba(227,161,62,0.95)] animate-in zoom-in-75 duration-200";
+
   return (
     <div
       className={cn(
-        "grid w-fit grid-cols-9 gap-px rounded-sm border border-ink/25 bg-[#f6edcf] p-1 shadow-[inset_0_0_10px_rgba(42,33,24,0.12)]",
+        "grid w-fit grid-cols-9 rounded-sm shadow-[inset_0_0_10px_rgba(42,33,24,0.12)]",
+        clear
+          ? "gap-px border-2 border-ink/70 bg-ink/65 p-0.5"
+          : "gap-px border-2 border-ink/55 bg-[#f6edcf] p-1.5",
         className,
       )}
     >
@@ -57,7 +82,13 @@ export function MiniGrid({
         <div
           key={c}
           style={{ width: cellSize, height: cellSize }}
-          className="relative border border-ink/10 bg-[#fff7de]/35"
+          className={cn(
+            "relative transition-all duration-200 ease-out",
+            clear
+              ? "bg-[#f8edcf]"
+              : "border border-ink/35 bg-[#fff7de]/35",
+            highlightCell === c && highlightClass,
+          )}
         >
           {bbGet(bb, c) && (
             <span
@@ -69,7 +100,8 @@ export function MiniGrid({
                 } as CSSProperties
               }
               className={cn(
-                "absolute inset-[18%] rounded-[1px] shadow-[0_0_0_1px_rgba(42,33,24,0.2)]",
+                "absolute rounded-[1px] shadow-[0_0_0_1px_rgba(42,33,24,0.35)]",
+                clear ? "inset-[10%]" : "inset-[18%]",
                 activeClass,
               )}
             />

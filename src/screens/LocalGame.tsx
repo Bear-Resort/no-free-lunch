@@ -198,6 +198,7 @@ export function LocalGame({
   const [game, setGame] = useState<Game>(() => newGame(seed, variant));
   const [benchOpen, setBenchOpen] = useState(false);
   const [insight, setInsight] = useState(false);
+  const [hoverCell, setHoverCell] = useState<number | null>(null);
   const [attemptResult, setAttemptResult] = useState<TurnRecord | null>(null);
   const [revealNote, setRevealNote] = useState<number | null>(null);
   const [assayerNote, setAssayerNote] = useState<string | null>(null);
@@ -404,6 +405,7 @@ export function LocalGame({
             heat={heat?.probs ?? null}
             disabled={benchOpen}
             onDrill={onDrill}
+            onHoverCell={setHoverCell}
           />
           <div className="w-full max-w-[720px]">
             <PlayerPlate
@@ -415,7 +417,7 @@ export function LocalGame({
           </div>
         </div>
 
-        <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-5 lg:w-[300px]">
+        <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-5 lg:w-[340px]">
           <div className="flex">
             <DesktopIcon
               glyph="📁"
@@ -443,7 +445,7 @@ export function LocalGame({
               )}
             </p>
           )}
-          <MapTimeline game={game} />
+          <MapTimeline game={game} highlightCell={hoverCell} />
 
           <section className="flex-1">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted">

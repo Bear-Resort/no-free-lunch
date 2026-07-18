@@ -93,11 +93,14 @@ export function GameBoard({
   heat,
   disabled,
   onDrill,
+  onHoverCell,
 }: {
   game: Game;
   heat?: number[] | null;
   disabled?: boolean;
   onDrill: (cell: number) => void;
+  /** Fired with cell index on enter, null on leave — for MiniGrid sync. */
+  onHoverCell?: (cell: number | null) => void;
 }) {
   const [tilt, setTilt] = useState({ rx: 13, ry: 0 });
   const lastDrill = [...game.log].reverse().find((r) => r.action === "drill");
@@ -119,7 +122,10 @@ export function GameBoard({
     <div
       className="w-full max-w-[min(720px,calc(100svh-18rem))] pb-7 [perspective:1100px]"
       onMouseMove={onMove}
-      onMouseLeave={() => setTilt({ rx: 13, ry: 0 })}
+      onMouseLeave={() => {
+        setTilt({ rx: 13, ry: 0 });
+        onHoverCell?.(null);
+      }}
     >
       {/* One flat 3D transform, no preserve-3d: browsers hit-test this
           correctly. The slab thickness below is painted, not modeled. */}
@@ -162,17 +168,26 @@ export function GameBoard({
                     ? { backgroundColor: `rgba(227, 161, 62, ${0.05 + p * 0.4})` }
                     : undefined;
 
+                const canDrill =
+                  !drilled && !disabled && game.status === "active";
+
                 return (
                   <button
                     key={cell}
-                    disabled={disabled || drilled || game.status !== "active"}
-                    onClick={() => onDrill(cell)}
+                    type="button"
+                    disabled={!canDrill && !drilled}
+                    onClick={() => {
+                      if (canDrill) onDrill(cell);
+                    }}
+                    onMouseEnter={() => onHoverCell?.(cell)}
                     aria-label={`cell ${Math.floor(cell / 9) + 1}-${(cell % 9) + 1}`}
                     style={style}
                     className={cn(
-                      "relative aspect-square border border-wood-line/35 transition-all duration-150",
-                      !drilled &&
-                        "hover:z-10 hover:scale-[1.07] hover:border-gold/70 hover:bg-[rgba(227,161,62,0.14)] hover:shadow-md disabled:hover:scale-100",
+                      "relative aspect-square border border-wood-line/35 transition-all duration-200 ease-out",
+                      canDrill &&
+                        "hover:z-10 hover:scale-[1.07] hover:border-gold/70 hover:bg-[rgba(227,161,62,0.14)] hover:shadow-md",
+                      drilled &&
+                        "cursor-default hover:z-10 hover:scale-[1.04] hover:brightness-110 hover:shadow-md",
                       drilled && !hasEmber && "bg-black/20",
                       isLast && "z-10 animate-drill-pop",
                     )}
