@@ -14,6 +14,71 @@ export const isMuted = () => muted;
 export function setMuted(m: boolean) {
   muted = m;
   localStorage.setItem("nfl-muted", m ? "1" : "0");
+  if (m) stopAmbient();
+}
+
+/* A barely-there forest at night: looped brown noise through a slowly
+   breathing lowpass. Starts silent, fades in; the digital ending kills it. */
+let ambient: {
+  gain: GainNode;
+  src: AudioBufferSourceNode;
+  lfo: OscillatorNode;
+} | null = null;
+
+export function startAmbient() {
+  if (muted || ambient) return;
+  try {
+    const a = ac();
+    const dur = 4;
+    const buf = a.createBuffer(1, a.sampleRate * dur, a.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < d.length; i++) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      d[i] = last * 3.5;
+    }
+    const src = a.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const filter = a.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 240;
+    const lfo = a.createOscillator();
+    lfo.frequency.value = 0.07;
+    const lfoGain = a.createGain();
+    lfoGain.gain.value = 90;
+    lfo.connect(lfoGain).connect(filter.frequency);
+    const gain = a.createGain();
+    gain.gain.setValueAtTime(0, a.currentTime);
+    gain.gain.linearRampToValueAtTime(0.02, a.currentTime + 3);
+    src.connect(filter).connect(gain).connect(a.destination);
+    src.start();
+    lfo.start();
+    ambient = { gain, src, lfo };
+  } catch {
+    /* audio unavailable — the forest stays silent */
+  }
+}
+
+export function stopAmbient() {
+  const nodes = ambient;
+  if (!nodes) return;
+  ambient = null;
+  try {
+    const a = ac();
+    nodes.gain.gain.linearRampToValueAtTime(0.0001, a.currentTime + 0.8);
+    setTimeout(() => {
+      try {
+        nodes.src.stop();
+        nodes.lfo.stop();
+      } catch {
+        /* already stopped */
+      }
+    }, 900);
+  } catch {
+    /* audio unavailable */
+  }
 }
 
 function tone(

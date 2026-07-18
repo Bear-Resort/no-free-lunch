@@ -13,6 +13,7 @@ type Screen =
       seed: string;
       variant: Variant;
       opponent: "human" | "agent";
+      difficulty: "fair" | "merciless";
     }
   | {
       name: "online";
@@ -28,6 +29,17 @@ const convex =
 /** Seeded deep link for demos/tests: ?play=lunch|standard&seed=JUDGES-1&vs=agent */
 function initialScreen(): Screen {
   const params = new URLSearchParams(window.location.search);
+  // ?reset=1: pristine take for demos — forget the intro, the walkthrough,
+  // and (mercifully) what you are.
+  if (params.get("reset") === "1") {
+    try {
+      localStorage.removeItem("nfl.blackForestIntroSeen.v1");
+      localStorage.removeItem("nfl.forestIntroSeen.v1");
+      localStorage.removeItem("nfl.selfAware.v1");
+    } catch {
+      /* nothing to forget */
+    }
+  }
   const play = params.get("play");
   if (play === "lunch" || play === "standard") {
     return {
@@ -35,6 +47,7 @@ function initialScreen(): Screen {
       seed: params.get("seed") ?? crypto.randomUUID().slice(0, 8),
       variant: play === "lunch" ? LUNCH_BREAK : STANDARD,
       opponent: params.get("vs") === "agent" ? "agent" : "human",
+      difficulty: params.get("ai") === "merciless" ? "merciless" : "fair",
     };
   }
   return { name: "home" };
@@ -49,6 +62,7 @@ function AppRoutes() {
         seed={screen.seed}
         variant={screen.variant}
         opponent={screen.opponent}
+        difficulty={screen.difficulty}
         onExit={() => setScreen({ name: "home" })}
       />
     );
@@ -66,12 +80,13 @@ function AppRoutes() {
   return (
     <Home
       convexReady={convex !== null}
-      onStart={(variant, opponent) =>
+      onStart={(variant, opponent, difficulty) =>
         setScreen({
           name: "local",
           seed: crypto.randomUUID().slice(0, 8),
           variant,
           opponent,
+          difficulty,
         })
       }
       onOnlineReady={(session) => setScreen({ name: "online", session })}

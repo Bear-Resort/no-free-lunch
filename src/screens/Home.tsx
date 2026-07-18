@@ -71,13 +71,14 @@ export function Home({
   onOnlineReady,
   convexReady,
 }: {
-  onStart: (variant: Variant, opponent: Opponent) => void;
+  onStart: (variant: Variant, opponent: Opponent, difficulty: "fair" | "merciless") => void;
   onOnlineReady: (session: OnlineReady) => void;
   /** False when VITE_CONVEX_URL is missing — online stays disabled. */
   convexReady: boolean;
 }) {
   const [modeOpen, setModeOpen] = useState(false);
   const [picking, setPicking] = useState<Opponent | null>(null);
+  const [difficulty, setDifficulty] = useState<"fair" | "merciless">("fair");
   const [onlineOpen, setOnlineOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const [introDone, setIntroDone] = useState(false);
@@ -245,13 +246,55 @@ export function Home({
               : "Two students, one desk, no professor. Red pins first, Blue answers. Pass the device when the forest asks politely."}
           </DialogDescription>
 
+          {picking === "agent" && (
+            <div className="mt-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted">
+                The Assayer tonight
+              </div>
+              <div className="mt-1.5 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setDifficulty("fair")}
+                  className={cn(
+                    "rounded-md border p-2.5 text-left transition-all",
+                    difficulty === "fair"
+                      ? "border-gold bg-gold/10 ring-1 ring-gold/50"
+                      : "border-edge bg-surface hover:border-gold/50",
+                  )}
+                >
+                  <div className="font-display text-sm font-bold uppercase tracking-[0.12em]">
+                    Night shift
+                  </div>
+                  <div className="mt-0.5 text-xs text-ink-muted">
+                    It blinks. It hesitates. It can be beaten.
+                  </div>
+                </button>
+                <button
+                  onClick={() => setDifficulty("merciless")}
+                  className={cn(
+                    "rounded-md border p-2.5 text-left transition-all",
+                    difficulty === "merciless"
+                      ? "border-danger bg-danger/10 ring-1 ring-danger/50"
+                      : "border-edge bg-surface hover:border-danger/50",
+                  )}
+                >
+                  <div className="font-display text-sm font-bold uppercase tracking-[0.12em]">
+                    Merciless
+                  </div>
+                  <div className="mt-0.5 text-xs text-ink-muted">
+                    The exact machine. It does not blink.
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-5 flex flex-col gap-2">
-            <Button onClick={() => onStart(LUNCH_BREAK, picking ?? "human")}>
+            <Button onClick={() => onStart(LUNCH_BREAK, picking ?? "human", difficulty)}>
               Lunch Break — a small academic haunting
             </Button>
             <Button
               variant="secondary"
-              onClick={() => onStart(STANDARD, picking ?? "human")}
+              onClick={() => onStart(STANDARD, picking ?? "human", difficulty)}
             >
               Standard — five exhibits and a bad dream
             </Button>

@@ -19,7 +19,7 @@ import {
 import { cellProbabilities, solve } from "@engine/solver";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { isMuted, setMuted, sfx } from "@/lib/sound";
+import { isMuted, setMuted, sfx, startAmbient, stopAmbient } from "@/lib/sound";
 import {
   PalmCursor,
   rememberSelfAware,
@@ -339,6 +339,7 @@ type LocalGameProps = {
   seed: string;
   variant: Variant;
   opponent?: "human" | "agent";
+  difficulty?: "fair" | "merciless";
   /** Online: only this seat may act when it is their turn. */
   mySeat?: Seat;
   /** When set, moves go through Convex and state is synced. */
@@ -391,6 +392,7 @@ function LocalGameView({
   seed,
   variant,
   opponent = "human",
+  difficulty = "fair",
   mySeat,
   online,
   remoteState,
@@ -448,6 +450,7 @@ function LocalGameView({
         setInsight(false);
         setAssayerNote(null);
         spokenCat.current = "";
+        milestonesSaid.current.clear();
         setExitFx(null);
         setPhase("seal");
       }, 1900);
@@ -518,7 +521,7 @@ function LocalGameView({
     if (phase !== "play") return;
     if (!isAgentTurn || revealNote !== null || attemptResult !== null) return;
     const timer = setTimeout(() => {
-      const decision = chooseMove(game);
+      const decision = chooseMove(game, { fallible: difficulty === "fair" });
       let next: Game;
       if (decision.move.kind === "drill") {
         next = drill(game, decision.move.cell);
@@ -554,6 +557,55 @@ function LocalGameView({
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, isAgentTurn, revealNote, attemptResult, phase]);
+
+  // The forest hums, faintly, until the machine world takes over.
+  useEffect(() => {
+    if (mute || phase === "digital") {
+      stopAmbient();
+      return;
+    }
+    startAmbient();
+    return () => stopAmbient();
+  }, [mute, phase]);
+
+  // Milestone whispers — each said once per game, story mode only.
+  const milestonesSaid = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (opponent !== "agent" || phase !== "play") return;
+    const said = milestonesSaid.current;
+    const embers = game.log.filter(
+      (r) => r.action === "drill" && r.struckGold,
+    ).length;
+    if (embers >= 1 && !said.has("ember")) {
+      said.add("ember");
+      setAssayerNote("An ember. *He is in there.* Keep digging — or start accusing.");
+      return;
+    }
+    const close = game.log.find(
+      (r) =>
+        r.action === "attempt" &&
+        !r.correct &&
+        r.seat === "red" &&
+        (r.bucket === "HOT" || r.bucket === "WARM"),
+    );
+    if (close && !said.has("close")) {
+      said.add("close");
+      setAssayerNote(
+        close.bucket === "HOT"
+          ? "*Hot.* The forest held its breath. Try that shape again, counsel."
+          : "Warm. The trees leaned in a little.",
+      );
+      return;
+    }
+    if (
+      game.status === "active" &&
+      game.variant.turnCap - game.turn + 1 <= 6 &&
+      !said.has("cap")
+    ) {
+      said.add("cap");
+      setAssayerNote("Six turns before the bell. *The bell is a shovel.*");
+    }
+  }, [game, phase, opponent]);
 
   // The forest breathes: a gust every so often. The candle stutters, the
   // hand trembles — and once, the thing across the table notices.

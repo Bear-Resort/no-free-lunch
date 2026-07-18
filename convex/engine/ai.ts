@@ -22,7 +22,17 @@ export interface AgentDecision {
   };
 }
 
-export function chooseMove(g: Game): AgentDecision {
+export interface AgentOptions {
+  /**
+   * Night-shift mode: the Assayer blinks. It sometimes hesitates before a
+   * certain submission and sometimes digs on gut instead of information.
+   * Default (false) is the merciless exact policy — tests rely on it.
+   */
+  fallible?: boolean;
+}
+
+export function chooseMove(g: Game, opts: AgentOptions = {}): AgentDecision {
+  const fallible = opts.fallible ?? false;
   const { candidates, layouts } = solve(g);
   const allRevealed = revealedCount(g) === g.variant.maps;
   const mapKeys = revealedMaps(g).map(bbKey);
@@ -31,10 +41,16 @@ export function chooseMove(g: Game): AgentDecision {
   // Certain win: all maps revealed and exactly one hypothesis fits everything.
   // Late-game gamble: ≤2 hypotheses near the turn cap.
   const turnsLeft = g.variant.turnCap - g.turn + 1;
-  const shouldSubmit =
+  let shouldSubmit =
     candidates.length === 1
       ? allRevealed || turnsLeft <= 6
       : candidates.length === 2 && turnsLeft <= 4;
+
+  // Night shift: with time on the clock, it double-checks its certainty
+  // for a turn — a human-sized window to steal the win.
+  if (shouldSubmit && fallible && turnsLeft > 6 && Math.random() < 0.45) {
+    shouldSubmit = false;
+  }
 
   if (shouldSubmit) {
     const layout = candidates[0];
@@ -54,9 +70,13 @@ export function chooseMove(g: Game): AgentDecision {
     }
   }
 
+  // Night shift: sometimes it digs on gut feeling instead of information,
+  // falling through to the map-overlap prospecting below.
+  const distracted = fallible && Math.random() < 0.3;
+
   // Otherwise drill. With a live hypothesis set: prefer near-certain gold
   // (points), else the cell that best splits the hypotheses (information).
-  if (candidates.length >= 2) {
+  if (candidates.length >= 2 && !distracted) {
     const probs = cellProbabilities(candidates);
     let greedy = -1;
     let split = -1;
