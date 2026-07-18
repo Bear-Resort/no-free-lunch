@@ -254,6 +254,7 @@ export function LocalGame({
   const [mute, setMute] = useState(isMuted);
   const [wind, setWind] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
+  const [endSheetOpen, setEndSheetOpen] = useState(true);
   const coldLineSaid = useRef(false);
   const spokenCat = useRef("");
   const lastLogLen = useRef(0);
@@ -301,6 +302,17 @@ export function LocalGame({
     red: "Red",
     black: opponent === "agent" ? "The Assayer" : "Blue",
   };
+
+  const folderVerdict =
+    game.status === "finished" && opponent === "human"
+      ? game.winner === "tie"
+        ? `Draw · ${game.scores.red}–${game.scores.black}`
+        : game.winReason === "map"
+          ? `${names[game.winner]} escaped`
+          : game.winReason === "forfeit"
+            ? `${names[game.winner as Seat]} by forfeit`
+            : `${names[game.winner as Seat]} · more gold · ${game.scores.red}–${game.scores.black}`
+      : null;
 
   /** Apply a reducer result + play the matching sound. */
   const applyMove = (next: Game) => {
@@ -521,6 +533,13 @@ export function LocalGame({
             disabled={benchOpen || !isMyTurn}
             onDrill={onDrill}
             onHoverCell={setHoverCell}
+            pinHand={
+              online && mySeat
+                ? { opponentSeat: mySeat === "red" ? "black" : "red" }
+                : opponent === "agent"
+                  ? "assayer"
+                  : "none"
+            }
           />
           {phase === "play" && !benchOpen && (
             <TurnWhisper turn={game.turn} isAgentTurn={isAgentTurn} />
@@ -569,7 +588,11 @@ export function LocalGame({
               )}
             </p>
           )}
-          <MapTimeline game={game} highlightCell={hoverCell} />
+          <MapTimeline
+            game={game}
+            highlightCell={hoverCell}
+            verdict={folderVerdict}
+          />
 
           <section className="flex-1">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted">
@@ -747,30 +770,59 @@ export function LocalGame({
 
       {/* Game over (two-human games only — Assayer games get story endings) */}
       <Dialog
-        open={game.status === "finished" && opponent === "human"}
+        open={
+          game.status === "finished" &&
+          opponent === "human" &&
+          endSheetOpen
+        }
         onOpenChange={() => {}}
       >
         <DialogContent className="max-w-md text-center" hideClose>
-          <div className="mx-auto inline-block animate-stamp border-4 border-danger px-4 py-1 font-display text-lg font-bold uppercase tracking-[0.25em] text-danger">
-            Case closed
-          </div>
-          <DialogTitle className="mt-4 text-2xl">
-            {game.winner === "tie"
-              ? "Codex accepts mutual failure"
-              : `${names[game.winner as Seat]} escapes`}
-          </DialogTitle>
-          <DialogDescription>
-            {game.winReason === "map" &&
-              "Correct map attempt. The forest opens one bureaucratic eye."}
-            {game.winReason === "score" &&
-              `All ${game.goldTotal} embers recovered. Final score ${game.scores.red}–${game.scores.black}. Codex calls this proof by excavation.`}
-            {game.winReason === "cap" &&
-              `Turn cap reached. Final score ${game.scores.red}–${game.scores.black}. The exam bell was a shovel hitting bone.`}
-            {game.winReason === "forfeit" &&
-              (mySeat && game.winner === mySeat
-                ? "Your opponent left the table. Codex rules in your favor by forfeit."
-                : "You left the table. Codex awards the remaining student the case.")}
-          </DialogDescription>
+          {(() => {
+            const byGold =
+              game.winReason === "score" || game.winReason === "cap";
+            const byMap = game.winReason === "map";
+            const isTie = game.winner === "tie";
+            const stamp = isTie
+              ? "Draw"
+              : byMap || game.winReason === "forfeit"
+                ? "Case closed"
+                : "Higher score";
+            const title = isTie
+              ? "Even gold — a draw"
+              : byMap
+                ? `${names[game.winner as Seat]} escapes`
+                : game.winReason === "forfeit"
+                  ? `${names[game.winner as Seat]} takes the case`
+                  : `${names[game.winner as Seat]} found more gold`;
+            return (
+              <>
+                <div
+                  className={cn(
+                    "mx-auto inline-block animate-stamp border-4 px-4 py-1 font-display text-lg font-bold uppercase tracking-[0.25em]",
+                    isTie || byGold
+                      ? "border-ink-muted text-ink-muted"
+                      : "border-danger text-danger",
+                  )}
+                >
+                  {stamp}
+                </div>
+                <DialogTitle className="mt-4 text-2xl">{title}</DialogTitle>
+                <DialogDescription>
+                  {byMap &&
+                    "Correct map attempt. The forest opens one bureaucratic eye."}
+                  {byGold &&
+                    (isTie
+                      ? `Final score ${game.scores.red}–${game.scores.black}. A draw.`
+                      : `Final score ${game.scores.red}–${game.scores.black}.`)}
+                  {game.winReason === "forfeit" &&
+                    (mySeat && game.winner === mySeat
+                      ? "Your opponent left the table. The remaining student keeps the case."
+                      : "You left the table. The remaining student keeps the case.")}
+                </DialogDescription>
+              </>
+            );
+          })()}
           <div className="mt-5">
             <FormulaReveal
               formula={game.formula}
@@ -779,29 +831,80 @@ export function LocalGame({
             />
           </div>
           <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
-            The gold was real. The reason was waiting for you to admit it.
+            {game.winReason === "map"
+              ? "The gold was real. The reason was waiting for you to admit it."
+              : game.winReason === "forfeit"
+                ? "The table does not wait for absences."
+                : "More gold wins. Equal gold draws."}
           </p>
-          <div className="mt-4 flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={onExit}>
-              Home
+          <div className="mt-4 flex flex-col gap-2">
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => setEndSheetOpen(false)}
+            >
+              View board
             </Button>
-            {!online && (
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  setGame(newGame(`${seed}-${game.log.length}-r`, variant));
-                  setInsight(false);
-                  setAssayerNote(null);
-                  spokenCat.current = "";
-                  setPhase("seal");
-                }}
-              >
-                Rematch
+            <div className="flex gap-2">
+              <Button variant="ghost" className="flex-1" onClick={onExit}>
+                Home
               </Button>
-            )}
+              {!online && (
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    setGame(newGame(`${seed}-${game.log.length}-r`, variant));
+                    setInsight(false);
+                    setAssayerNote(null);
+                    spokenCat.current = "";
+                    setEndSheetOpen(true);
+                    setPhase("seal");
+                  }}
+                >
+                  Rematch
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {game.status === "finished" &&
+        opponent === "human" &&
+        !endSheetOpen && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center p-4">
+            <div className="pointer-events-auto flex max-w-lg flex-wrap items-center gap-2 border border-edge bg-elevated/95 px-3 py-2 shadow-2xl backdrop-blur-md">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+                {folderVerdict}
+              </span>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setEndSheetOpen(true)}
+              >
+                Result
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onExit}>
+                Home
+              </Button>
+              {!online && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setGame(newGame(`${seed}-${game.log.length}-r`, variant));
+                    setInsight(false);
+                    setAssayerNote(null);
+                    spokenCat.current = "";
+                    setEndSheetOpen(true);
+                    setPhase("seal");
+                  }}
+                >
+                  Rematch
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
       {/* The story — unmissable, click-through */}
       {phase === "intro" && (

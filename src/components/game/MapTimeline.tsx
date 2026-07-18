@@ -11,13 +11,19 @@ const TILTS = ["-rotate-3", "rotate-2", "-rotate-1", "rotate-3", "-rotate-2"];
 export function MapTimeline({
   game,
   highlightCell = null,
+  verdict = null,
 }: {
   game: Game;
   /** Sync with GameBoard hover — same cell index lights up on each exhibit. */
   highlightCell?: number | null;
+  /** When the game is over, stamp the result onto the folder. */
+  verdict?: string | null;
 }) {
   const revealed = revealedCount(game);
   const [zoom, setZoom] = useState<number | null>(null);
+  const [truthOpen, setTruthOpen] = useState(false);
+  const showTruth = verdict !== null && game.status === "finished";
+
   return (
     <div className="relative overflow-hidden rounded-md border border-edge bg-[#d7b46e]/55 p-2.5 shadow-sm">
       <div className="absolute inset-0 opacity-35 [background-image:repeating-linear-gradient(4deg,rgba(42,33,24,.08)_0_1px,transparent_1px_13px)]" />
@@ -25,6 +31,43 @@ export function MapTimeline({
         <Paperclip className="size-3" />
         Codex folder · forbidden exhibits
       </div>
+      {verdict && (
+        <div className="relative mt-2 flex items-center gap-2.5 rotate-[-1.5deg] border-2 border-ink/70 bg-[#f8edcf] px-2 py-1.5 shadow-[2px_3px_0_rgba(58,44,26,0.25)]">
+          {showTruth && (
+            <button
+              type="button"
+              onClick={() => setTruthOpen(true)}
+              title="Inspect the true map"
+              className="shrink-0 cursor-zoom-in rounded-sm border border-ink/25 bg-[#efe3c0] p-1 transition-transform hover:scale-[1.03]"
+            >
+              <MiniGrid
+                bb={game.gold}
+                cellSize={5}
+                clear
+                activeClass="bg-gold"
+                highlightCell={highlightCell}
+                highlightKind={
+                  highlightCell === null || game.cells[highlightCell] === 0
+                    ? "prospect"
+                    : game.cells[highlightCell] === 1
+                      ? "drilled-red"
+                      : "drilled-black"
+                }
+              />
+            </button>
+          )}
+          <div className="min-w-0 flex-1 text-center">
+            <div className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-[#3a2c1a]">
+              {verdict}
+            </div>
+            {showTruth && (
+              <div className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[#5c5140]/90">
+                true map · click to inspect
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* Fixed 3 columns → at most two rows for 5 exhibits. */}
       <div className="relative mt-2 grid grid-cols-3 gap-2">
         {game.variant.revealAfter.map((after, i) =>
@@ -82,6 +125,14 @@ export function MapTimeline({
           bb={game.maps[zoom]}
           label={`Exhibit M${zoom + 1}`}
           onClose={() => setZoom(null)}
+        />
+      )}
+      {truthOpen && (
+        <MapLightbox
+          bb={game.gold}
+          label="True map"
+          activeClass="bg-gold"
+          onClose={() => setTruthOpen(false)}
         />
       )}
     </div>

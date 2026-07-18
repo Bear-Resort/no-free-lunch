@@ -208,20 +208,17 @@ const STEPS: Step[] = [
   },
   {
     title: "How the exam ends",
-    body: "Win by submitting the true map, or by highest drill score when all gold is found / turn cap hits (40 Standard, 20 Lunch Break). Red moves first. Equal scores = draw.",
+    body: "Win by submitting the true map, or by having more gold when the board is cleared / the exam ends. Red moves first. Equal scores = draw — never a mutual failure.",
     art: (
       <div className="mx-auto max-w-sm space-y-2 border border-edge/80 bg-surface/40 px-4 py-3 font-mono text-[11px] leading-relaxed tracking-[0.04em] text-ink-muted">
         <p>
           <span className="text-gold">1.</span> Correct map attempt → win
         </p>
         <p>
-          <span className="text-gold">2.</span> All embers dug → higher score
+          <span className="text-gold">2.</span> More gold dug → win
         </p>
         <p>
-          <span className="text-gold">3.</span> Turn cap → higher score
-        </p>
-        <p>
-          <span className="text-gold">4.</span> Tie scores → draw
+          <span className="text-gold">3.</span> Equal gold → draw
         </p>
       </div>
     ),
