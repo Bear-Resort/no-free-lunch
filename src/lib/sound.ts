@@ -83,6 +83,36 @@ export const sfx = {
     tone(590, 0.65, "sawtooth", 0.06, 0.05, 170);
     tone(940, 0.5, "square", 0.03, 0.02, 320);
   },
+  /** The door refuses you — a heavy slam through the floorboards. */
+  crash() {
+    if (muted) return;
+    try {
+      const a = ac();
+      const t0 = a.currentTime;
+      const dur = 0.45;
+      const buf = a.createBuffer(1, a.sampleRate * dur, a.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) {
+        d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+      }
+      const src = a.createBufferSource();
+      src.buffer = buf;
+      const filter = a.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(500, t0);
+      filter.frequency.exponentialRampToValueAtTime(90, t0 + dur);
+      const gain = a.createGain();
+      gain.gain.setValueAtTime(0.28, t0);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(filter).connect(gain).connect(a.destination);
+      src.start(t0);
+      src.stop(t0 + dur);
+    } catch {
+      /* audio unavailable — stay silent */
+    }
+    tone(50, 0.8, "sine", 0.3);
+    tone(37, 1.0, "sine", 0.2, 0.04);
+  },
   /** Wind through the trees — filtered noise swell. */
   wind() {
     if (muted) return;

@@ -140,6 +140,8 @@ export function GameBoard({
   onHoverCell,
   /** Local PvP: none. Assayer: blue hand on Assayer pins. Online: opponent seat color. */
   pinHand = "none",
+  /** The Verdict: number of embers re-ignited so far; undefined = not celebrating. */
+  celebration,
 }: {
   game: Game;
   heat?: number[] | null;
@@ -148,12 +150,15 @@ export function GameBoard({
   /** Fired with cell index on enter, null on leave — for MiniGrid sync. */
   onHoverCell?: (cell: number | null) => void;
   pinHand?: "none" | "assayer" | { opponentSeat: Seat };
+  celebration?: number;
 }) {
   const [tilt, setTilt] = useState({ rx: 13, ry: 0 });
   const lastDrill = [...game.log].reverse().find((r) => r.action === "drill");
   const emberDrills = game.log.filter((r) => r.action === "drill" && r.struckGold);
   const redTrail = emberDrills.filter((r) => r.seat === "red").map((r) => r.cell!);
   const blueTrail = emberDrills.filter((r) => r.seat === "black").map((r) => r.cell!);
+  const emberOrder = emberDrills.map((r) => r.cell!);
+  const celebrating = celebration !== undefined;
 
   const handSeat: Seat | null =
     pinHand === "none" || !lastDrill
@@ -178,7 +183,10 @@ export function GameBoard({
 
   return (
     <div
-      className="w-full max-w-[min(720px,calc(100svh-18rem))] pb-7 [perspective:1100px]"
+      className={cn(
+        "w-full max-w-[min(720px,calc(100svh-18rem))] pb-7 [perspective:1100px]",
+        celebrating && "relative z-40",
+      )}
       onMouseMove={onMove}
       onMouseLeave={() => {
         setTilt({ rx: 13, ry: 0 });
@@ -216,6 +224,12 @@ export function GameBoard({
                 const showPinHand = isLast && handSeat !== null;
                 const p = !drilled && heat ? heat[cell] : 0;
 
+                // The Verdict: embers re-ignite in discovery order while
+                // everything else recedes into shadow.
+                const litIdx = celebrating ? emberOrder.indexOf(cell) : -1;
+                const isLit = litIdx > -1 && litIdx < (celebration ?? 0);
+                const isNewestLit = isLit && litIdx === (celebration ?? 0) - 1;
+
                 const style: CSSProperties | undefined = hasEmber
                   ? {
                       background:
@@ -248,7 +262,9 @@ export function GameBoard({
                       drilled &&
                         "cursor-default hover:z-10 hover:scale-[1.04] hover:brightness-110 hover:shadow-md",
                       drilled && !hasEmber && "bg-black/20",
-                      isLast && "z-10 animate-drill-pop",
+                      isLast && !celebrating && "z-10 animate-drill-pop",
+                      celebrating && !isLit && "opacity-25 saturate-50",
+                      isLit && "ember-ignite z-10",
                     )}
                   >
                     {drilled && (
@@ -263,11 +279,11 @@ export function GameBoard({
                         className="codex-hand-pin -right-[52%] -top-[72%] z-30 w-[118%]"
                       />
                     )}
-                    {isLast && hasEmber && (
+                    {((isLast && hasEmber && !celebrating) || isNewestLit) && (
                       <span aria-hidden className="pointer-events-none absolute inset-0">
                         {SPARKS.map((s, i) => (
                           <span
-                            key={i}
+                            key={`${i}-${isNewestLit ? litIdx : "last"}`}
                             style={{ "--dx": s.dx, "--dy": s.dy } as CSSProperties}
                             className="absolute left-1/2 top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold animate-spark"
                           />
@@ -285,7 +301,10 @@ export function GameBoard({
                 aria-hidden
                 viewBox="0 0 100 100"
                 preserveAspectRatio="none"
-                className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+                className={cn(
+                  "pointer-events-none absolute inset-0 z-20 h-full w-full",
+                  celebrating && "verdict-strings",
+                )}
               >
                 <StringTrail trail={redTrail} seat="red" />
                 <StringTrail trail={blueTrail} seat="black" />

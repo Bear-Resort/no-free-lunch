@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { sfx } from "@/lib/sound";
+import { WatchingEyes } from "./Ambience";
 
 /**
  * Inscryption-style pixel dialogue box. Types the line out; click once to
@@ -47,7 +48,12 @@ export function PixelDialog({
   }, [complete, onDismiss]);
 
   return (
-    <button
+    <>
+      {/* something in the room leans closer while it speaks */}
+      <span className="pointer-events-none fixed left-1/2 top-[36%] z-[35] -translate-x-1/2 opacity-15 animate-in fade-in duration-1000">
+        <WatchingEyes size={26} />
+      </span>
+      <button
       onClick={() => (complete ? onDismiss() : setShown(text.length))}
       className={
         "fixed left-1/2 z-40 w-[min(92vw,620px)] -translate-x-1/2 rounded-none border-2 border-ink bg-[#0d100a] px-5 py-3.5 text-left shadow-[0_0_0_4px_#0d100a,0_10px_40px_rgba(0,0,0,0.8)] outline-none animate-in fade-in duration-300 " +
@@ -63,6 +69,7 @@ export function PixelDialog({
         {text.slice(0, shown)}
         {complete && <span className="caret-blink text-gold">▏</span>}
       </span>
-    </button>
+      </button>
+    </>
   );
 }

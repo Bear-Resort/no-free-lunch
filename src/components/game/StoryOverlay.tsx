@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { sfx } from "@/lib/sound";
+import { WatchingEyes } from "./Ambience";
 
 export interface StoryBeat {
   img?: string;
@@ -64,6 +65,10 @@ export function StoryOverlay({
       }}
       className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center bg-black/90 p-6 outline-none backdrop-blur-sm animate-in fade-in duration-500"
     >
+      <WatchingEyes
+        size={20}
+        className="absolute left-1/2 top-[10%] -translate-x-1/2 opacity-25"
+      />
       <div className="relative w-[min(92vw,540px)] border-2 border-ink bg-[#0d100a] px-6 py-6 text-left shadow-[0_0_0_4px_#0d100a,0_0_60px_rgba(227,161,62,0.15)]">
         {onSkip && (
           <button

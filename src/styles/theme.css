@@ -142,6 +142,98 @@ body {
   }
 }
 
+.codex-mask {
+  filter:
+    drop-shadow(0 0 8px rgba(91, 130, 192, 0.55))
+    drop-shadow(0 8px 14px rgba(0, 0, 0, 0.7));
+}
+
+.codex-mask-screen {
+  animation: codex-screen-breathe 3.8s ease-in-out infinite;
+}
+
+.codex-mask-face {
+  animation: codex-face-glitch 5.2s steps(1) infinite;
+  text-shadow: 0 0 7px rgba(169, 200, 255, 0.9);
+}
+
+.codex-mask-caret {
+  animation: caret-blink 0.9s steps(1) infinite;
+  text-shadow: 0 0 7px rgba(227, 161, 62, 0.85);
+}
+
+.codex-mask-glitch-line {
+  animation: codex-line-glitch 4.8s steps(1) infinite;
+  opacity: 0.35;
+}
+
+.codex-mask-awake .codex-mask-screen {
+  filter: drop-shadow(0 0 10px rgba(91, 130, 192, 0.95));
+}
+
+.codex-boss-presence {
+  transform-origin: 50% 100%;
+  animation: codex-boss-idle 5.8s ease-in-out infinite;
+}
+
+.codex-boss-presence-awake {
+  animation-duration: 3.2s;
+}
+
+@keyframes codex-screen-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes codex-face-glitch {
+  0%,
+  88%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  89% {
+    transform: translateX(-1px);
+    opacity: 0.65;
+  }
+  90% {
+    transform: translateX(1px);
+    opacity: 1;
+  }
+}
+
+@keyframes codex-line-glitch {
+  0%,
+  84%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.26;
+  }
+  85% {
+    transform: translateX(3px);
+    opacity: 0.8;
+  }
+  86% {
+    transform: translateX(-2px);
+    opacity: 0.4;
+  }
+}
+
+@keyframes codex-boss-idle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.6deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(0.6deg);
+  }
+}
+
 /* ── The wooden table board ────────────────────────────────────────────── */
 
 .wood-panel {
@@ -286,6 +378,68 @@ body {
   50% {
     opacity: 0;
   }
+}
+
+/* ── The Verdict: the board testifies ──────────────────────────────────── */
+
+.ember-ignite {
+  animation: ember-ignite 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes ember-ignite {
+  0% {
+    box-shadow: 0 0 0 rgba(227, 161, 62, 0);
+    transform: scale(1);
+  }
+  45% {
+    box-shadow: 0 0 28px rgba(244, 196, 100, 0.95);
+    transform: scale(1.18);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(227, 161, 62, 0.75);
+    transform: scale(1.02);
+  }
+}
+
+.verdict-strings {
+  filter: drop-shadow(0 0 3px rgba(227, 161, 62, 0.85));
+}
+
+.eyes-closing {
+  animation: eyes-closing 3s ease-in forwards;
+}
+
+@keyframes eyes-closing {
+  0% {
+    opacity: 0.5;
+    transform: scaleY(1);
+  }
+  65% {
+    opacity: 0.42;
+    transform: scaleY(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(0.04);
+  }
+}
+
+.screen-shake {
+  animation: screen-shake 0.5s linear 2;
+}
+
+@keyframes screen-shake {
+  0% { transform: translate(0, 0); }
+  10% { transform: translate(-8px, 5px); }
+  20% { transform: translate(7px, -6px); }
+  30% { transform: translate(-6px, -4px); }
+  40% { transform: translate(8px, 4px); }
+  50% { transform: translate(-5px, 7px); }
+  60% { transform: translate(6px, -3px); }
+  70% { transform: translate(-7px, -5px); }
+  80% { transform: translate(5px, 5px); }
+  90% { transform: translate(-3px, 2px); }
+  100% { transform: translate(0, 0); }
 }
 
 /* ── Game feedback ─────────────────────────────────────────────────────── */

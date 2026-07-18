@@ -196,8 +196,10 @@ export function MachineBench({
             <div className="absolute bottom-4 left-5 max-w-[340px] rotate-[-1deg] border border-ink/20 bg-[#f8edcf]/80 p-3 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-[#5c5140] shadow-md">
               {canCombine ? (
                 <>
-                  Drag the scraps. Click two to mark A and B. Codex accepts neat
-                  reasoning, but never rewards neat desks.
+                  Click two scraps to load A and B, pick AND / OR / XOR, run
+                  the machine. Chain outputs into new scraps. Submit your final
+                  sheet — an exact match frees the client. Codex never rewards
+                  neat desks; drag things anywhere.
                 </>
               ) : (
                 <>

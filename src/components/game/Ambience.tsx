@@ -1,6 +1,39 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * A pair of amber eyes blinking in the dark. Codex is always somewhere.
+ * Size in px; dim/opacity is the caller's business via className.
+ */
+export function WatchingEyes({
+  size = 10,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden
+      style={{ gap: size * 1.5 }}
+      className={cn("pointer-events-none flex items-center", className)}
+    >
+      {[0, 1].map((i) => (
+        <span
+          key={i}
+          style={{
+            width: size,
+            height: Math.max(3, size * 0.66),
+            animationDelay: `${i * 0.14}s`,
+            boxShadow: `0 0 ${size}px rgba(227,161,62,0.8)`,
+          }}
+          className="eye rounded-full bg-gold"
+        />
+      ))}
+    </span>
+  );
+}
+
 /** A pale hand that follows the pointer. It trembles when the wind blows. */
 export function PalmCursor({ trembling }: { trembling: boolean }) {
   const [pos, setPos] = useState({ x: -100, y: -100 });

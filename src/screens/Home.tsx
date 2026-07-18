@@ -3,6 +3,7 @@ import { Pickaxe } from "lucide-react";
 import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { GoldDust } from "@/components/game/GoldDust";
+import { WatchingEyes } from "@/components/game/Ambience";
 import { FloatingCode, WarningSign } from "@/components/home/ForestSigns";
 import {
   AssayerArt,
@@ -110,6 +111,15 @@ export function Home({
       <ForestBackdrop />
       <GoldDust />
       <FloatingCode />
+      {/* the forest population, noticing you */}
+      <WatchingEyes
+        size={7}
+        className="absolute bottom-[17%] left-[13%] hidden opacity-40 sm:flex"
+      />
+      <WatchingEyes
+        size={5}
+        className="absolute bottom-[11%] right-[30%] hidden opacity-25 sm:flex"
+      />
 
       <header className="relative flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -119,7 +129,7 @@ export function Home({
           </span>
         </div>
         <span className="hidden font-mono text-xs font-semibold uppercase tracking-[0.25em] text-ink-muted sm:block">
-          A student slept · Codex noticed
+          James slept · Codex noticed
         </span>
       </header>
 

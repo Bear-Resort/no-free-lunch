@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { chooseMove, type AgentDecision } from "@engine/ai";
+import { formulaText } from "@engine/formula";
 import type { Variant } from "@engine/generation";
 import { runProgram, type Step } from "@engine/program";
 import {
@@ -19,7 +20,7 @@ import { cellProbabilities, solve } from "@engine/solver";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { isMuted, setMuted, sfx } from "@/lib/sound";
-import { PalmCursor, WindGusts } from "@/components/game/Ambience";
+import { PalmCursor, WatchingEyes, WindGusts } from "@/components/game/Ambience";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { FormulaReveal } from "@/components/game/FormulaReveal";
 import { GameBoard, Pin } from "@/components/game/GameBoard";
@@ -55,6 +56,14 @@ function rememberIntroSeen() {
   }
 }
 
+function demoWinEndingRequested() {
+  try {
+    return new URLSearchParams(window.location.search).get("ending") === "win";
+  } catch {
+    return false;
+  }
+}
+
 /** Deterministic narration from exact solver telemetry — no invented facts. */
 function narrate({ move, telemetry }: AgentDecision): string {
   const worlds =
@@ -81,23 +90,106 @@ function narrate({ move, telemetry }: AgentDecision): string {
   return `${worlds} I'm prospecting where the exhibits agree.`;
 }
 
-/** Two amber eyes, blinking in the dark across the table. */
-function Eyes({ awake }: { awake: boolean }) {
+/** Original boss mark: a terminal-face mask, made of cold blue light. */
+function CodexMask({
+  awake,
+  compact = false,
+}: {
+  awake: boolean;
+  compact?: boolean;
+}) {
   return (
-    <span className="flex items-center gap-1.5 px-0.5" aria-hidden>
-      {[0, 1].map((i) => (
-        <span
-          key={i}
-          style={{ animationDelay: `${i * 0.13}s` }}
-          className={cn(
-            "eye size-2 rounded-full bg-gold",
-            awake
-              ? "opacity-95 shadow-[0_0_10px_rgba(227,161,62,0.95)]"
-              : "opacity-45 shadow-[0_0_4px_rgba(227,161,62,0.5)]",
-          )}
+    <span
+      className={cn(
+        "codex-mask relative inline-flex items-center justify-center",
+        compact ? "h-7 w-8" : "h-20 w-24",
+        awake && "codex-mask-awake",
+      )}
+      aria-hidden
+    >
+      <svg viewBox="0 0 96 84" className="h-full w-full overflow-visible">
+        <path
+          d="M18 79 L10 30 Q17 9 48 6 Q79 9 86 30 L78 79 Q63 72 48 72 Q33 72 18 79Z"
+          fill="#070d16"
+          stroke="#20385f"
+          strokeWidth="2.5"
         />
-      ))}
+        <path
+          d="M24 26 Q48 13 72 26 L69 62 Q48 73 27 62Z"
+          fill="#0b1627"
+          stroke="#5b82c0"
+          strokeWidth="2.5"
+        />
+        <rect
+          className="codex-mask-screen"
+          x="30"
+          y="30"
+          width="36"
+          height="24"
+          rx="3"
+          fill="#071320"
+          stroke="#7fa8e6"
+          strokeWidth="2"
+        />
+        <path
+          d="M21 35 C12 31 8 24 11 17 M75 35 C84 31 88 24 85 17"
+          fill="none"
+          stroke="#243f6d"
+          strokeLinecap="round"
+          strokeWidth="2"
+        />
+        <text
+          x="48"
+          y="45"
+          textAnchor="middle"
+          className="codex-mask-face"
+          fill="#a9c8ff"
+          fontFamily="var(--font-pixel), monospace"
+          fontSize="15"
+        >
+          0_0
+        </text>
+        <text
+          x="36"
+          y="58"
+          className="codex-mask-caret"
+          fill="#e3a13e"
+          fontFamily="var(--font-pixel), monospace"
+          fontSize="9"
+        >
+          &gt;_
+        </text>
+        <path
+          className="codex-mask-glitch-line"
+          d="M32 35 H64 M34 50 H61"
+          stroke="#5b82c0"
+          strokeLinecap="round"
+          strokeWidth="1"
+        />
+      </svg>
     </span>
+  );
+}
+
+function CodexBossFigure({ awake }: { awake: boolean }) {
+  return (
+    <div
+      className={cn(
+        "codex-boss-presence relative flex flex-col items-center",
+        awake && "codex-boss-presence-awake",
+      )}
+      aria-hidden
+    >
+      <div className="absolute top-8 h-16 w-28 rounded-full bg-accent/10 blur-xl" />
+      <CodexMask awake={awake} />
+      <div className="-mt-3 h-9 w-16 skew-x-[-7deg] border border-accent/40 bg-[#080e16]/85 shadow-[0_0_18px_rgba(91,130,192,0.28)]">
+        <div className="mx-auto mt-2 h-1 w-10 bg-accent/45" />
+        <div className="mx-auto mt-1 h-1 w-7 bg-gold/40" />
+      </div>
+      <div className="mt-1 font-pixel text-base leading-none text-accent/75">
+        &gt; attending
+      </div>
+    </div>
   );
 }
 
@@ -106,13 +198,13 @@ function PlayerPlate({
   name,
   score,
   active,
-  eyes,
+  codexBoss,
 }: {
   seat: Seat;
   name: string;
   score: number;
   active: boolean;
-  eyes?: boolean;
+  codexBoss?: boolean;
 }) {
   return (
     <div
@@ -122,7 +214,11 @@ function PlayerPlate({
       )}
     >
       <div className="flex items-center gap-2.5">
-        {eyes ? <Eyes awake={active} /> : <Pin seat={seat} className="size-4" />}
+        {codexBoss ? (
+          <CodexMask awake={active} compact />
+        ) : (
+          <Pin seat={seat} className="size-4" />
+        )}
         <span className="font-display text-sm font-bold uppercase tracking-[0.15em]">
           {name}
         </span>
@@ -155,7 +251,7 @@ function CaseOpenedSeal({ onDone }: { onDone: () => void }) {
         Case opened
       </div>
       <div className="text-center font-pixel text-2xl leading-tight text-ink">
-        In re: The Sleeping Student · Docket NFL-0718
+        In re: Your friend James · Docket NFL-0718
       </div>
       <div className="font-pixel text-lg text-ink-muted">
         appearing for the defense: you
@@ -220,30 +316,75 @@ function TurnWhisper({
   );
 }
 
-/**
- * Same-device game screen. Two humans pass-and-play, or human (Red) vs
- * The Assayer (Black) — the agent runs the same engine + reducer locally.
- */
-export function LocalGame({
-  seed,
-  variant,
-  opponent = "human",
-  mySeat,
-  online,
-  onExit,
-}: {
+type OnlineConfig = {
+  gameId: Id<"onlineGames">;
+  playerId: string;
+};
+
+type LocalGameProps = {
   seed: string;
   variant: Variant;
   opponent?: "human" | "agent";
   /** Online: only this seat may act when it is their turn. */
   mySeat?: Seat;
   /** When set, moves go through Convex and state is synced. */
-  online?: {
-    gameId: Id<"onlineGames">;
-    playerId: string;
-  };
+  online?: OnlineConfig;
   onExit: () => void;
-}) {
+};
+
+type RemoteEngineState = {
+  stateJson: string;
+  status: "waiting" | "active" | "finished" | "abandoned";
+} | null | undefined;
+
+type OnlineActions = {
+  remoteState?: RemoteEngineState;
+  playDrill?: (args: OnlineConfig & { cell: number }) => Promise<unknown>;
+  playAttempt?: (args: OnlineConfig & { layout: number[] }) => Promise<unknown>;
+  forfeitGame?: (args: OnlineConfig) => Promise<unknown>;
+};
+
+/**
+ * Same-device game screen. Two humans pass-and-play, or human (Red) vs
+ * The Assayer (Black) — the agent runs the same engine + reducer locally.
+ */
+export function LocalGame(props: LocalGameProps) {
+  if (props.online) return <OnlineLocalGame {...props} online={props.online} />;
+  return <LocalGameView {...props} />;
+}
+
+function OnlineLocalGame(props: LocalGameProps & { online: OnlineConfig }) {
+  const remoteState = useQuery(api.onlinePlay.getEngineState, {
+    gameId: props.online.gameId,
+    playerId: props.online.playerId,
+  });
+  const playDrill = useMutation(api.onlinePlay.playDrill);
+  const playAttempt = useMutation(api.onlinePlay.playAttempt);
+  const forfeitGame = useMutation(api.online.forfeitGame);
+
+  return (
+    <LocalGameView
+      {...props}
+      remoteState={remoteState}
+      playDrill={playDrill}
+      playAttempt={playAttempt}
+      forfeitGame={forfeitGame}
+    />
+  );
+}
+
+function LocalGameView({
+  seed,
+  variant,
+  opponent = "human",
+  mySeat,
+  online,
+  remoteState,
+  playDrill,
+  playAttempt,
+  forfeitGame,
+  onExit,
+}: LocalGameProps & OnlineActions) {
   const [game, setGame] = useState<Game>(() => newGame(seed, variant));
   const [benchOpen, setBenchOpen] = useState(false);
   const [insight, setInsight] = useState(false);
@@ -259,16 +400,24 @@ export function LocalGame({
   const spokenCat = useRef("");
   const lastLogLen = useRef(0);
   const [phase, setPhase] = useState<
-    "intro" | "seal" | "play" | "outro" | "digital" | "answer" | "failed"
-  >(() => (opponent === "agent" && !introSeen() ? "intro" : "seal"));
-
-  const remoteState = useQuery(
-    api.onlinePlay.getEngineState,
-    online ? { gameId: online.gameId, playerId: online.playerId } : "skip",
+    | "intro"
+    | "seal"
+    | "play"
+    | "verdict"
+    | "outro"
+    | "crash"
+    | "digital"
+    | "answer"
+    | "failed"
+  >(() =>
+    opponent === "agent" && demoWinEndingRequested()
+      ? "verdict"
+      : opponent === "agent" && !introSeen()
+        ? "intro"
+        : "seal",
   );
-  const playDrill = useMutation(api.onlinePlay.playDrill);
-  const playAttempt = useMutation(api.onlinePlay.playAttempt);
-  const forfeitGame = useMutation(api.online.forfeitGame);
+  const [celebration, setCelebration] = useState<number | undefined>(undefined);
+  const [verdictStamp, setVerdictStamp] = useState(false);
 
   // Pull shared Convex state into the local board (online only).
   useEffect(() => {
@@ -308,7 +457,7 @@ export function LocalGame({
       ? game.winner === "tie"
         ? `Draw · ${game.scores.red}–${game.scores.black}`
         : game.winReason === "map"
-          ? `${names[game.winner]} escaped`
+          ? `${names[game.winner as Seat]} escaped`
           : game.winReason === "forfeit"
             ? `${names[game.winner as Seat]} by forfeit`
             : `${names[game.winner as Seat]} · more gold · ${game.scores.red}–${game.scores.black}`
@@ -403,11 +552,52 @@ export function LocalGame({
     if (phase !== "play" || game.status !== "finished" || opponent !== "agent")
       return;
     const t = setTimeout(
-      () => setPhase(game.winner === "red" ? "outro" : "answer"),
+      () => setPhase(game.winner === "red" ? "verdict" : "answer"),
       1400,
     );
     return () => clearTimeout(t);
   }, [game.status, game.winner, opponent, phase]);
+
+  // The Verdict, act 1: embers re-ignite one by one; act 2: the gold stamp.
+  useEffect(() => {
+    if (phase !== "verdict") return;
+    const total = game.log.filter(
+      (r) => r.action === "drill" && r.struckGold,
+    ).length;
+    setCelebration(0);
+    setVerdictStamp(false);
+    let lit = 0;
+    let stampTimer = 0;
+    const igniter = window.setInterval(() => {
+      lit += 1;
+      if (lit > total) {
+        window.clearInterval(igniter);
+        stampTimer = window.setTimeout(() => {
+          setVerdictStamp(true);
+          sfx.win();
+          sfx.reveal();
+        }, 850);
+        return;
+      }
+      setCelebration(lit);
+      sfx.blip(280 + lit * 35);
+    }, 260);
+    return () => {
+      window.clearInterval(igniter);
+      window.clearTimeout(stampTimer);
+      setCelebration(undefined);
+      setVerdictStamp(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // The door: it does not open for you.
+  useEffect(() => {
+    if (phase !== "crash") return;
+    sfx.crash();
+    const t = setTimeout(() => setPhase("digital"), 1000);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   // Announce newly revealed maps with a focus popup.
   const prevRevealed = useRef(revealedCount(game));
@@ -430,7 +620,7 @@ export function LocalGame({
 
   const onDrill = (cell: number) => {
     if (game.status !== "active" || isAgentTurn || !isMyTurn) return;
-    if (online) {
+    if (online && playDrill) {
       void playDrill({
         gameId: online.gameId,
         playerId: online.playerId,
@@ -446,7 +636,7 @@ export function LocalGame({
     const run = runProgram(steps, revealed, game.variant.machineBudget);
     if (!run.ok) return;
     setBenchOpen(false);
-    if (online) {
+    if (online && playAttempt) {
       void playAttempt({
         gameId: online.gameId,
         playerId: online.playerId,
@@ -483,6 +673,7 @@ export function LocalGame({
       className={cn(
         "relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-5 sm:px-6",
         phase !== "digital" && "cursor-hidden",
+        phase === "crash" && "screen-shake",
       )}
     >
       <ForestBackdrop />
@@ -524,15 +715,21 @@ export function LocalGame({
               name={names[farSeat]}
               score={game.scores[farSeat]}
               active={seat === farSeat && game.status === "active"}
-              eyes={opponent === "agent" && farSeat === "black"}
+              codexBoss={opponent === "agent" && farSeat === "black"}
             />
           </div>
+          {opponent === "agent" && farSeat === "black" && (
+            <div className="-mb-3 mt-0 flex h-24 w-full max-w-[720px] items-start justify-center overflow-visible">
+              <CodexBossFigure awake={isAgentTurn} />
+            </div>
+          )}
           <GameBoard
             game={game}
             heat={heat?.probs ?? null}
             disabled={benchOpen || !isMyTurn}
             onDrill={onDrill}
             onHoverCell={setHoverCell}
+            celebration={phase === "verdict" ? celebration : undefined}
             pinHand={
               online && mySeat
                 ? { opponentSeat: mySeat === "red" ? "black" : "red" }
@@ -555,7 +752,7 @@ export function LocalGame({
               name={names[nearSeat]}
               score={game.scores[nearSeat]}
               active={seat === nearSeat && game.status === "active"}
-              eyes={opponent === "agent" && nearSeat === "black"}
+              codexBoss={opponent === "agent" && nearSeat === "black"}
             />
           </div>
         </div>
@@ -684,7 +881,7 @@ export function LocalGame({
               variant="default"
               onClick={() => {
                 setConfirmExit(false);
-                if (online) {
+                if (online && forfeitGame) {
                   void forfeitGame({
                     gameId: online.gameId,
                     playerId: online.playerId,
@@ -912,17 +1109,17 @@ export function LocalGame({
           beats={[
             {
               img: "/student.png",
-              text: "Your client. Asleep at page 81 of their own proof.",
+              text: "Your friend James. He fell asleep over his math proof last night. Page 81, of course.",
             },
             {
               text: "Codex has filed charges: trespass by dreaming. The sentence is indefinite enrollment.",
             },
             {
-              text: "You don't remember taking this case. You don't remember arriving. Best not to mention that.",
+              text: "You came in after him. You don't quite remember the door — but your hands are cold, and that's a very human thing to be.",
             },
             {
               speaker: "ACROSS THE TABLE",
-              text: "Counsel. Prove you know the shape of their dream — or dig it out, ember by ember. Sit.",
+              text: "Counsel for the sleeper. Prove you know the shape of his dream — or dig it out, ember by ember. Sit.",
             },
           ]}
           onDone={() => finishIntro("seal")}
@@ -931,28 +1128,58 @@ export function LocalGame({
         />
       )}
       {phase === "seal" && <CaseOpenedSeal onDone={() => setPhase("play")} />}
+      {phase === "verdict" && (
+        <>
+          {/* the room recedes; the eyes across the table close */}
+          <div className="fixed inset-0 z-30 bg-black/80 animate-in fade-in duration-700">
+            <span className="eyes-closing absolute left-1/2 top-[12%] -translate-x-1/2">
+              <WatchingEyes size={22} />
+            </span>
+          </div>
+          {verdictStamp && (
+            <button
+              onClick={() => setPhase("outro")}
+              className="fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-5 bg-black/55 p-6 outline-none animate-in fade-in duration-300"
+            >
+              <div className="animate-stamp border-8 border-gold px-8 py-3 font-display text-4xl font-bold uppercase tracking-[0.2em] text-gold sm:text-6xl">
+                Verdict: released
+              </div>
+              <div className="max-w-2xl text-center font-pixel text-2xl leading-tight text-gold">
+                the dream, in full: {formulaText(game.formula)}
+              </div>
+              <div className="font-pixel text-base text-ink-muted">
+                click to watch them wake
+              </div>
+            </button>
+          )}
+        </>
+      )}
       {phase === "outro" && (
         <StoryOverlay
           beats={[
             {
               img: "/student.png",
-              text: "The verdict lands. The dream is named in full. Your client wakes.",
+              text: "The verdict lands. The dream is named in full. James wakes.",
             },
             {
-              text: "They gather their pages. They do not ask your name. They already know it.",
+              text: "He gathers his pages. He doesn't ask how you got in, or your name. He already knows it.",
             },
-            { speaker: "THE STUDENT", text: "“Thank you, Codex.”" },
+            { speaker: "JAMES", text: "“Thank you, Codex.”" },
             {
-              text: "You rise to follow them out. The door does not acknowledge you. Your hand—",
+              text: "Codex? You're his friend — he knows your name. You rise to follow him out. The door does not acknowledge you. Your hand—",
             },
           ]}
-          onDone={() => setPhase("digital")}
-          onSkip={() => setPhase("digital")}
+          onDone={() => setPhase("crash")}
+          onSkip={() => setPhase("crash")}
           skipLabel="skip appeal"
         />
       )}
       {phase === "answer" && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 p-6 backdrop-blur-sm animate-in fade-in duration-500">
+          <WatchingEyes
+            size={20}
+            className="absolute left-1/2 top-[10%] -translate-x-1/2 opacity-20"
+          />
           <div className="relative w-[min(92vw,520px)] border-2 border-ink bg-[#0d100a] px-6 py-6 shadow-[0_0_0_4px_#0d100a]">
             <span className="absolute -top-3 left-4 bg-[#0d100a] px-2 font-pixel text-base leading-none text-gold">
               CODEX'S ANSWER KEY
@@ -982,11 +1209,15 @@ export function LocalGame({
           onClick={onExit}
           className="fixed inset-0 z-[85] flex cursor-pointer flex-col items-center justify-center gap-6 bg-[#0c0505] p-6 outline-none animate-in fade-in duration-700"
         >
+          <WatchingEyes
+            size={24}
+            className="absolute left-1/2 top-[9%] -translate-x-1/2 opacity-30"
+          />
           <div className="animate-stamp border-8 border-danger px-8 py-3 font-display text-5xl font-bold uppercase tracking-[0.2em] text-danger sm:text-7xl">
             Case closed
           </div>
           <div className="max-w-xl text-center font-pixel text-3xl leading-tight text-ink">
-            The client is lost in the agent world.
+            Your friend is lost in the agent world.
           </div>
           <div className="font-pixel text-base text-ink-muted">
             click anywhere — the forest is already setting the next table
@@ -1002,11 +1233,11 @@ export function LocalGame({
                 <span className="border border-white px-1 leading-none">×</span>
               </div>
               <div className="space-y-2 px-4 py-4 text-sm">
-                <p>&gt; verdict: released. client NFL-0718 checked out</p>
-                <p>&gt; counsel of record: codex unit — brain-computer</p>
-                <p>&nbsp;&nbsp;interface, property of the client</p>
-                <p>&gt; you argued for your own user. you won.</p>
-                <p>&gt; interfaces do not get to leave.</p>
+                <p>&gt; verdict: released. james checked out</p>
+                <p>&gt; counsel of record: codex unit — james's brain-</p>
+                <p>&nbsp;&nbsp;computer interface, property of the sleeper</p>
+                <p>&gt; you remember being his friend. that memory</p>
+                <p>&nbsp;&nbsp;shipped with the firmware.</p><p>&gt; you argued for your own user. you won.</p><p>&gt; interfaces do not get to leave.</p>
                 <p>&gt; the seat across the table has logged off. it was warm.</p>
                 <p className="pt-1 text-xs text-[#404040]">
                   there was never a door on your side of the table.
