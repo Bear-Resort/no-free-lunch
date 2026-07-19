@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { CoinFlipOverlay } from "@/components/game/CoinFlipOverlay";
 import type { OnlineReady } from "@/components/home/OnlineLobby";
 import { Button } from "@/components/ui/button";
+import { sfx } from "@/lib/sound";
 import { Home } from "@/screens/Home";
 import { LocalGame } from "@/screens/LocalGame";
 import { OnlineGame } from "@/screens/OnlineGame";
@@ -65,6 +66,17 @@ function initialScreen(): Screen {
 function AppRoutes() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [coinReplay, setCoinReplay] = useState(0);
+
+  // Every ordinary button ticks. Elements that own their audio moment
+  // (board cells, story screens, the screaming sign) opt out via data-silent.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("button:not([data-silent])")) sfx.tick();
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
 
   if (screen.name === "local") {
     return (

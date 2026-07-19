@@ -253,6 +253,7 @@ function CaseOpenedSeal({ onDone }: { onDone: () => void }) {
   }, [onDone]);
   return (
     <button
+      data-silent
       onClick={onDone}
       className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center gap-5 bg-black/85 p-6 outline-none backdrop-blur-sm animate-in fade-in duration-300"
     >
@@ -1468,6 +1469,7 @@ function LocalGameView({
           </div>
           {verdictStamp && (
             <button
+              data-silent
               onClick={() => setPhase("outro")}
               className="fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-5 bg-black/55 p-6 outline-none animate-in fade-in duration-300"
             >
@@ -1539,6 +1541,7 @@ function LocalGameView({
       )}
       {phase === "failed" && (
         <button
+          data-silent
           onClick={onExit}
           className="fixed inset-0 z-[85] flex cursor-pointer flex-col items-center justify-center gap-6 bg-[#0c0505] p-6 outline-none animate-in fade-in duration-700"
         >

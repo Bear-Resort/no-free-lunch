@@ -210,6 +210,7 @@ export function WarningSign({ className }: { className?: string }) {
 
   return (
     <button
+      data-silent
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}

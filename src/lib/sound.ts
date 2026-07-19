@@ -260,6 +260,11 @@ export const sfx = {
   win() {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.28, "sine", 0.1, i * 0.11));
   },
+  /** Generic UI tick — every ordinary button, wood-and-bakelite. */
+  tick() {
+    tone(1250, 0.03, "square", 0.022);
+    tone(330, 0.05, "sine", 0.03);
+  },
   /** Dialogue voice blip, Undertale-style — one per typed letter. */
   blip(base = 300) {
     tone(base * (0.92 + Math.random() * 0.2), 0.045, "square", 0.035);

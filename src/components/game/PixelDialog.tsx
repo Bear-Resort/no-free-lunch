@@ -57,6 +57,7 @@ export function PixelDialog({
   return (
     <>
       <button
+      data-silent
       onClick={() => (complete ? onDismiss() : setShown(chars.length))}
       className={
         "fixed left-1/2 z-40 w-[min(92vw,620px)] -translate-x-1/2 rounded-none border-2 border-ink bg-[#0d100a] px-5 py-3.5 text-left shadow-[0_0_0_4px_#0d100a,0_10px_40px_rgba(0,0,0,0.8)] outline-none animate-in fade-in duration-300 " +

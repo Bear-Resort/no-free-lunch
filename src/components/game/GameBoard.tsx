@@ -248,6 +248,7 @@ export function GameBoard({
                   <button
                     key={cell}
                     type="button"
+                    data-silent
                     disabled={!canDrill && !drilled}
                     onClick={() => {
                       if (canDrill) onDrill(cell);
