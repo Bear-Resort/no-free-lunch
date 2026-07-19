@@ -4,9 +4,9 @@ import type { CSSProperties } from "react";
    plus shape every system map is stamped from. Heavily blurred and slowly
    spinning — the game's atom as the hero object. Pure CSS 3D, 12 faces. */
 
-const L = 300; // bar length
-const T = 96; // bar thickness
-const D = 72; // extrusion depth
+const L = 360; // bar length
+const T = 112; // bar thickness
+const D = 84; // extrusion depth
 
 function face(w: number, h: number, transform: string): CSSProperties {
   return {
@@ -41,7 +41,7 @@ const ORBIT_TEXT =
 
 export function OrbitalHero() {
   return (
-    <div className="orbital-stage relative mx-auto aspect-square w-[min(78vw,520px)]">
+    <div className="orbital-stage relative mx-auto aspect-square w-[min(86vw,67vh,660px)]">
       {/* light from somewhere above — the forest does not explain it */}
       <div
         aria-hidden
@@ -65,12 +65,18 @@ export function OrbitalHero() {
         aria-hidden
         className="absolute inset-[7%] rounded-full border border-gold/40"
       />
+      <div
+        aria-hidden
+        className="absolute inset-[13%] rounded-full border border-ink/20"
+      />
       {/* the spinning cross */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="cross3d relative" style={{ width: L, height: L }}>
-          <div className="absolute left-1/2 top-1/2" style={{ transformStyle: "preserve-3d" }}>
-            <Bar horizontal />
-            <Bar horizontal={false} />
+        <div className="home-cross-scale">
+          <div className="cross3d relative" style={{ width: L, height: L }}>
+            <div className="absolute left-1/2 top-1/2" style={{ transformStyle: "preserve-3d" }}>
+              <Bar horizontal />
+              <Bar horizontal={false} />
+            </div>
           </div>
         </div>
       </div>
@@ -92,9 +98,9 @@ export function OrbitalHero() {
           className="text-ink"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 26,
-            fontWeight: 700,
-            letterSpacing: "0.22em",
+            fontSize: 31,
+            fontWeight: 800,
+            letterSpacing: "0.24em",
           }}
         >
           <textPath href="#orbit-path" textLength="1078">

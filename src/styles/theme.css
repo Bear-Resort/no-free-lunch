@@ -47,6 +47,10 @@ body {
   perspective: 900px;
 }
 
+.home-cross-scale {
+  transform: scale(0.78);
+}
+
 .cross3d {
   transform-style: preserve-3d;
   animation: cross-spin 22s linear infinite;
@@ -98,7 +102,88 @@ body {
   }
 }
 
+@media (min-width: 640px) {
+  .home-cross-scale {
+    transform: scale(1);
+  }
+}
+
 /* ── Floating agent chatter on the title screen ────────────────────────── */
+
+.forest-map-layer {
+  opacity: 0.92;
+  -webkit-mask-image: radial-gradient(circle at 50% 48%, black 0 62%, transparent 95%);
+  mask-image: radial-gradient(circle at 50% 48%, black 0 62%, transparent 95%);
+}
+
+.forest-map-contours path {
+  fill: none;
+  stroke: rgba(151, 161, 129, 0.14);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.forest-map-grid path {
+  fill: none;
+  stroke: rgba(91, 130, 192, 0.08);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.forest-map-crosses {
+  fill: rgba(227, 161, 62, 0.16);
+  stroke: rgba(227, 161, 62, 0.22);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.code-river {
+  fill: none;
+  stroke: var(--color-danger);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 24 20 8 18;
+  opacity: 0.72;
+  vector-effect: non-scaling-stroke;
+  animation: code-river-flow 18s linear infinite;
+}
+
+.code-river-main {
+  stroke-width: 5.8;
+}
+
+.code-river-under {
+  stroke-width: 4.8;
+  opacity: 0.64;
+  animation-duration: 22s;
+  animation-direction: reverse;
+}
+
+.code-river-branch {
+  stroke-width: 4.2;
+  opacity: 0.58;
+  animation-duration: 26s;
+}
+
+.code-river-text {
+  fill: rgba(232, 228, 210, 0.3);
+  font-family: var(--font-pixel);
+  font-size: 21px;
+  letter-spacing: 0;
+  text-shadow: 0 0 8px rgba(207, 70, 49, 0.5);
+}
+
+.home-ghost-title {
+  text-shadow:
+    0 0 24px rgba(227, 161, 62, 0.16),
+    0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes code-river-flow {
+  to {
+    stroke-dashoffset: -280;
+  }
+}
 
 .float-code {
   animation: float-code var(--fc-dur, 22s) linear infinite;

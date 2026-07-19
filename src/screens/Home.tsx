@@ -4,7 +4,11 @@ import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { GoldDust } from "@/components/game/GoldDust";
 import { WatchingEyes } from "@/components/game/Ambience";
-import { FloatingCode, WarningSign } from "@/components/home/ForestSigns";
+import {
+  FloatingCode,
+  ForestMapLayer,
+  WarningSign,
+} from "@/components/home/ForestSigns";
 import {
   AssayerArt,
   OnlineArt,
@@ -116,6 +120,7 @@ export function Home({
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden px-6 py-5 sm:px-10">
       <ForestBackdrop />
+      <ForestMapLayer />
       <GoldDust />
       <FloatingCode />
       {/* the forest population, noticing you */}
@@ -128,17 +133,23 @@ export function Home({
         className="absolute bottom-[11%] right-[30%] hidden opacity-25 sm:flex"
       />
 
-      <header className="relative flex items-center justify-between">
+      <header className="relative z-20 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Pickaxe className="size-4 text-gold" />
-          <span className="font-display text-base font-bold uppercase tracking-[0.3em]">
+          <Pickaxe className="size-5 text-gold sm:size-6" />
+          <span className="font-display text-xl font-extrabold uppercase tracking-[0.3em] text-ink drop-shadow-[0_0_14px_rgba(227,161,62,0.22)] sm:text-2xl">
             No Free Lunch
           </span>
         </div>
         <GlitchTagline />
       </header>
 
-      <main className="relative flex flex-1 items-center justify-center py-8">
+      <main className="relative z-10 flex flex-1 items-center justify-center py-4 sm:py-6">
+        <div
+          aria-hidden
+          className="home-ghost-title absolute left-1/2 top-[8%] hidden -translate-x-1/2 select-none whitespace-nowrap font-display text-5xl font-extrabold uppercase tracking-[0.18em] text-ink/10 sm:block lg:text-7xl xl:text-8xl"
+        >
+          No Free Lunch
+        </div>
         <ConfusingBrain
           className="absolute left-0 top-2 z-10 sm:left-2 sm:top-4 md:left-4"
           nudge={nudgeBrain}
@@ -154,9 +165,9 @@ export function Home({
         <NflTheoremStop className="absolute right-0 top-2 z-10 sm:right-2 sm:top-4 md:right-4" />
       </main>
 
-      <WarningSign className="absolute bottom-36 right-10 hidden md:block" />
+      <WarningSign className="absolute bottom-36 right-10 z-20 hidden md:block" />
 
-      <footer className="relative grid items-end gap-6 sm:grid-cols-3">
+      <footer className="relative z-20 grid items-end gap-6 sm:grid-cols-3">
         <div className="flex gap-8">
           <Stat label="Hidden truth" value="3,630,455" sub="possible formulas" />
           <Stat label="Final exam" value="81" sub="cells · one missing student" />
@@ -173,10 +184,10 @@ export function Home({
             }
             onClick={onEnterForest}
             className={cn(
-              "border-2 px-10 py-4 text-sm font-bold uppercase tracking-[0.3em] transition-all",
+              "relative z-10 border-2 bg-bg/60 px-10 py-4 text-sm font-bold uppercase tracking-[0.3em] shadow-[0_0_24px_rgba(0,0,0,0.45)] backdrop-blur-[1px] transition-all",
               introDone
-                ? "border-ink/60 bg-transparent text-ink hover:border-gold hover:bg-gold hover:text-[#1a140a]"
-                : "cursor-not-allowed border-ink/30 bg-transparent text-ink-muted/45",
+                ? "border-ink/60 text-ink hover:border-gold hover:bg-gold hover:text-[#1a140a]"
+                : "cursor-not-allowed border-ink/30 text-ink-muted/45",
             )}
           >
             Enter the forest
