@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Pickaxe } from "lucide-react";
 
 const TAGLINE_OK = "James slept · Codex noticed";
-const TAGLINE_BUG = "James sleeped · Codex noticed";
 import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { GoldDust } from "@/components/game/GoldDust";
