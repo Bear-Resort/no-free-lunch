@@ -22,6 +22,7 @@ import type * as lib_forfeit from "../lib/forfeit.js";
 import type * as lib_gameState from "../lib/gameState.js";
 import type * as lib_presence from "../lib/presence.js";
 import type * as lib_roomCode from "../lib/roomCode.js";
+import type * as narrator from "../narrator.js";
 import type * as online from "../online.js";
 import type * as onlineCleanup from "../onlineCleanup.js";
 import type * as onlinePlay from "../onlinePlay.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   "lib/gameState": typeof lib_gameState;
   "lib/presence": typeof lib_presence;
   "lib/roomCode": typeof lib_roomCode;
+  narrator: typeof narrator;
   online: typeof online;
   onlineCleanup: typeof onlineCleanup;
   onlinePlay: typeof onlinePlay;
