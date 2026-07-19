@@ -11,9 +11,26 @@ const SYSTEM = `You are "The Assayer" — the antagonist of a logic-deduction ga
 Voice: dry, cold, a little amused, faintly bureaucratic. Inscryption-meets-courtroom. Never cheerful. You address the player as "counsel."
 
 HARD RULES:
-- Speak ONE sentence, at most two. Under 24 words total.
-- You are given the TRUE state of your reasoning. Never invent numbers or claims beyond what you are told. Never reveal the hidden formula or where gold is.
-- No emoji. No stage directions. Just the line.`;
+- ONE sentence. At most 16 words. Shorter is better.
+- You are given the TRUE state of your reasoning and a MOOD. Match the mood. Never invent numbers or claims beyond what you are told. Never reveal the hidden formula or where gold is.
+- No emoji. No stage directions. No quotation marks. Just the line.`;
+
+/** Interpret the solver facts into an emotional register the model must match. */
+function moodFor(a: {
+  candidates: number;
+  allMapsRevealed: boolean;
+  moveKind: "drill" | "attempt";
+}): string {
+  if (a.moveKind === "attempt") {
+    return a.candidates === 1 && a.allMapsRevealed
+      ? "TRIUMPHANT AND FINAL — this submission wins; the dream is named; it is over."
+      : "COLDLY CONFIDENT — a calculated strike, though not yet certain.";
+  }
+  if (a.candidates === 1) return "QUIETLY MENACING — only one answer remains; you are toying with the counsel now.";
+  if (a.candidates <= 8) return "TIGHTENING — the net is closing; few hypotheses survive.";
+  if (a.candidates === 0) return "PATIENT — nothing fits yet; the truth waits behind a sealed map.";
+  return "DISMISSIVE — the counsel has barely begun; the fog is thick.";
+}
 
 export const speak = action({
   args: {
@@ -30,6 +47,7 @@ export const speak = action({
     if (!key) return { line: "", source: "no-key" };
 
     const facts = [
+      `MOOD: ${moodFor(args)}`,
       `Surviving hypotheses that fit all public evidence: ${args.candidates}.`,
       `All maps revealed: ${args.allMapsRevealed ? "yes" : "no"}.`,
       `Your chosen move this turn: ${args.moveKind}.`,
