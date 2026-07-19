@@ -322,6 +322,127 @@ function TurnWhisper({
   );
 }
 
+function AssayerDocket({
+  difficulty,
+  mercyUsed,
+  candidateCount,
+  allMapsRevealed,
+}: {
+  difficulty: "fair" | "merciless";
+  mercyUsed: boolean;
+  candidateCount: number | null;
+  allMapsRevealed: boolean;
+}) {
+  const certainty =
+    candidateCount === null
+      ? "Open insight.exe if you want the clerk to count surviving theories."
+      : candidateCount === 0
+        ? "No buildable theory fits yet. Something important is still sealed."
+        : candidateCount === 1
+          ? allMapsRevealed
+            ? "One theory remains. The mask is smiling without moving."
+            : "One buildable theory remains. It may still be early enough to steal."
+          : `${candidateCount} theories still survive the public evidence.`;
+
+  return (
+    <section className="relative overflow-hidden rounded-md border border-accent/30 bg-[#08111d]/80 px-3 py-2.5 shadow-[0_8px_20px_rgba(0,0,0,0.45)]">
+      <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(91,130,192,.16)_1px,transparent_1px),linear-gradient(90deg,rgba(91,130,192,.12)_1px,transparent_1px)] [background-size:14px_14px]" />
+      <div className="relative flex items-start justify-between gap-3">
+        <div>
+          <div className="font-display text-[11px] font-bold uppercase tracking-[0.2em] text-accent">
+            Assayer docket
+          </div>
+          <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+            {difficulty === "fair"
+              ? "night shift · fallible process"
+              : "merciless · exact process"}
+          </div>
+        </div>
+        <div
+          className={cn(
+            "shrink-0 rotate-[-3deg] border px-1.5 py-0.5 font-display text-[9px] font-bold uppercase tracking-[0.16em]",
+            mercyUsed
+              ? "border-ink-muted/60 text-ink-muted"
+              : "border-gold/70 text-gold",
+          )}
+        >
+          {mercyUsed ? "mercy spent" : "mercy unspent"}
+        </div>
+      </div>
+      <p className="relative mt-2 text-xs leading-relaxed text-ink-muted">
+        {certainty}
+      </p>
+    </section>
+  );
+}
+
+function ActiveWarrant({
+  game,
+  revealedCountNow,
+  candidateCount,
+  insightOn,
+  isAgentTurn,
+  isMyTurn,
+}: {
+  game: Game;
+  revealedCountNow: number;
+  candidateCount: number;
+  insightOn: boolean;
+  isAgentTurn: boolean;
+  isMyTurn: boolean;
+}) {
+  const nextReveal = game.variant.revealAfter[revealedCountNow];
+  const mapsReady = revealedCountNow >= 2;
+  let stamp = "Drill";
+  let text = "Pin a square. A miss is evidence; an ember is rent paid to the dream.";
+
+  if (game.status !== "active") {
+    stamp = "Closed";
+    text = "The docket is settled. Inspect the answer key, then decide whether to dream again.";
+  } else if (isAgentTurn) {
+    stamp = "Observe";
+    text = "Hands off the board. The mask is about to create public evidence.";
+  } else if (!isMyTurn) {
+    stamp = "Wait";
+    text = "Another student has the table. Codex dislikes simultaneous testimony.";
+  } else if (!mapsReady) {
+    stamp = "Drill";
+    text = nextReveal
+      ? `Only M1 is open. Drill until exhibit M${revealedCountNow + 1} unseals after turn ${nextReveal}.`
+      : "Only one exhibit is open. Drill; the folder cannot contradict itself yet.";
+  } else if (insightOn && candidateCount === 1) {
+    stamp = "Accuse";
+    text = "One buildable theory survives. Open theory.fld and submit before the mask does.";
+  } else if (insightOn && candidateCount === 0) {
+    stamp = "Drill";
+    text = nextReveal
+      ? `No buildable theory fits. Drill for evidence; M${revealedCountNow + 1} unseals after turn ${nextReveal}.`
+      : "No buildable theory fits. Drill; the contradiction must be in the dirt.";
+  } else {
+    stamp = "Combine";
+    text = "Open theory.fld, test two scraps with AND / OR / XOR, or drill cells where the exhibits disagree.";
+  }
+
+  return (
+    <section className="relative rotate-[-0.5deg] border border-gold/35 bg-[#f8edcf] px-3 py-2.5 text-[#2a2118] shadow-[2px_4px_0_rgba(0,0,0,0.28)]">
+      <div className="absolute -top-2 left-5 h-4 w-10 -rotate-3 bg-[#ead8a8]/85 shadow-sm" />
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 rotate-[-5deg] border-2 border-danger/70 px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.16em] text-danger">
+          {stamp}
+        </div>
+        <div>
+          <div className="font-display text-[11px] font-bold uppercase tracking-[0.18em]">
+            Active warrant
+          </div>
+          <p className="mt-1 font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-[#5c5140]">
+            {text}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type OnlineConfig = {
   gameId: Id<"onlineGames">;
   playerId: string;
@@ -735,13 +856,23 @@ function LocalGameView({
     prevRevealed.current = now;
   }, [game]);
 
-  // Insight overlay: hypotheses buildable from revealed maps that fit all
-  // public evidence — recomputed per turn while enabled.
+  // Public-evidence hypotheses. Shared by insight.exe, the Assayer docket,
+  // and the active warrant so the UI speaks from one clerk's ledger.
+  const solved = useMemo(() => solve(game), [game]);
   const heat = useMemo(() => {
     if (!insight) return null;
-    const { candidates } = solve(game);
-    return { probs: cellProbabilities(candidates), count: candidates.length };
-  }, [insight, game]);
+    return {
+      probs: cellProbabilities(solved.candidates),
+      count: solved.candidates.length,
+    };
+  }, [insight, solved]);
+  const docket = useMemo(() => {
+    if (opponent !== "agent") return null;
+    return {
+      candidateCount: solved.candidates.length,
+      allMapsRevealed: revealedCount(game) === game.variant.maps,
+    };
+  }, [game, opponent, solved]);
 
   const onDrill = (cell: number) => {
     if (game.status !== "active" || isAgentTurn || !isMyTurn) return;
@@ -910,6 +1041,22 @@ function LocalGameView({
               )}
             </p>
           )}
+          {docket && (
+            <AssayerDocket
+              difficulty={difficulty}
+              mercyUsed={mercyUsed.current}
+              candidateCount={insight ? docket.candidateCount : null}
+              allMapsRevealed={docket.allMapsRevealed}
+            />
+          )}
+          <ActiveWarrant
+            game={game}
+            revealedCountNow={revealed.length}
+            candidateCount={solved.candidates.length}
+            insightOn={insight}
+            isAgentTurn={isAgentTurn}
+            isMyTurn={isMyTurn}
+          />
           <MapTimeline
             game={game}
             highlightCell={hoverCell}
@@ -1289,6 +1436,10 @@ function LocalGameView({
                 "...one more round. Please."
               </Button>
             </div>
+            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
+              Mercy spends its winning submission. The mask will dig once; then
+              the table returns to you.
+            </p>
           </div>
         </div>
       )}

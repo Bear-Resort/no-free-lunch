@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
+import { CoinFlipOverlay } from "@/components/game/CoinFlipOverlay";
 import type { OnlineReady } from "@/components/home/OnlineLobby";
+import { Button } from "@/components/ui/button";
 import { Home } from "@/screens/Home";
 import { LocalGame } from "@/screens/LocalGame";
 import { OnlineGame } from "@/screens/OnlineGame";
 
 type Screen =
   | { name: "home" }
+  | { name: "coin-demo"; seat: "red" | "black" }
   | {
       name: "local";
       seed: string;
@@ -41,6 +44,12 @@ function initialScreen(): Screen {
     }
   }
   const play = params.get("play");
+  if (params.get("demo") === "coin") {
+    return {
+      name: "coin-demo",
+      seat: params.get("seat") === "black" ? "black" : "red",
+    };
+  }
   if (play === "lunch" || play === "standard") {
     return {
       name: "local",
@@ -55,6 +64,7 @@ function initialScreen(): Screen {
 
 function AppRoutes() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [coinReplay, setCoinReplay] = useState(0);
 
   if (screen.name === "local") {
     return (
@@ -65,6 +75,41 @@ function AppRoutes() {
         difficulty={screen.difficulty}
         onExit={() => setScreen({ name: "home" })}
       />
+    );
+  }
+
+  if (screen.name === "coin-demo") {
+    const otherSeat = screen.seat === "red" ? "black" : "red";
+    return (
+      <div className="min-h-screen bg-bg text-ink">
+        <CoinFlipOverlay
+          key={`${screen.seat}-${coinReplay}`}
+          seat={screen.seat}
+          onDone={() => {}}
+        />
+        <div className="fixed bottom-5 left-1/2 z-[95] flex -translate-x-1/2 flex-wrap justify-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setCoinReplay((n) => n + 1)}
+          >
+            Replay coin
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() =>
+              setScreen({
+                name: "coin-demo",
+                seat: otherSeat,
+              })
+            }
+          >
+            Show {otherSeat === "red" ? "Red" : "Blue"}
+          </Button>
+          <Button variant="ghost" onClick={() => setScreen({ name: "home" })}>
+            Home
+          </Button>
+        </div>
+      </div>
     );
   }
 
