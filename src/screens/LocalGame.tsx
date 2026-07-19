@@ -31,6 +31,7 @@ import {
   startHeartbeat,
   stopHeartbeat,
 } from "@/lib/sound";
+import { speakAssayerLine } from "@/lib/narrator";
 import {
   isSelfAware,
   PalmCursor,
@@ -531,6 +532,7 @@ function LocalGameView({
   const [endSheetOpen, setEndSheetOpen] = useState(true);
   const coldLineSaid = useRef(false);
   const spokenCat = useRef("");
+  const narrateToken = useRef(0);
   const lastLogLen = useRef(0);
   const [phase, setPhase] = useState<
     | "intro"
@@ -684,6 +686,19 @@ function LocalGameView({
       if (cat === "attempt" || cat !== spokenCat.current) {
         spokenCat.current = cat;
         setAssayerNote(narrate(decision));
+        // Ask GPT for the phrasing; the solver already fixed the facts, so the
+        // model can only re-voice what's true. Fallback stays if it's slow/off.
+        const token = ++narrateToken.current;
+        void speakAssayerLine({
+          candidates: decision.telemetry.candidates,
+          allMapsRevealed: decision.telemetry.allMapsRevealed,
+          reason: decision.telemetry.reason,
+          moveKind: decision.move.kind,
+          turn: next.turn,
+          turnCap: next.variant.turnCap,
+        }).then((line) => {
+          if (line && token === narrateToken.current) setAssayerNote(line);
+        });
       }
     }, 1100);
     return () => clearTimeout(timer);
