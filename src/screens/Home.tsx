@@ -1,7 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Pickaxe } from "lucide-react";
-
-const TAGLINE_OK = "James slept · Codex noticed";
 import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { GoldDust } from "@/components/game/GoldDust";
@@ -26,9 +24,12 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { startMusic } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
 type Opponent = "human" | "agent";
+
+const TAGLINE_OK = "James slept · Codex noticed";
 
 function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
@@ -89,6 +90,7 @@ export function Home({
 
   useEffect(() => {
     setIntroDone(hasSeenForestIntro());
+    startMusic("home");
   }, []);
 
   function chooseLocal(opponent: Opponent) {
@@ -103,6 +105,7 @@ export function Home({
   }
 
   function onEnterForest() {
+    startMusic("home");
     if (!introDone) {
       setNudgeBrain(true);
       return;

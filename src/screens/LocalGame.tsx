@@ -23,8 +23,11 @@ import {
   isMuted,
   setMuted,
   sfx,
+  startAgentChatter,
   startAmbient,
   stopAmbient,
+  startMusic,
+  stopAgentChatter,
   startHeartbeat,
   stopHeartbeat,
 } from "@/lib/sound";
@@ -716,12 +719,23 @@ function LocalGameView({
 
   // The forest hums, faintly, until the machine world takes over.
   useEffect(() => {
-    if (mute || phase === "digital") {
+    if (mute) {
       stopAmbient();
+      stopAgentChatter();
+      return;
+    }
+    startMusic("game");
+    if (phase === "digital") {
+      stopAmbient();
+      stopAgentChatter();
       return;
     }
     startAmbient();
-    return () => stopAmbient();
+    startAgentChatter();
+    return () => {
+      stopAmbient();
+      stopAgentChatter();
+    };
   }, [mute, phase]);
 
   // Milestone whispers — each said once per game, story mode only.

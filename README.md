@@ -1,12 +1,12 @@
 # No Free Lunch
 
-Turn-based game web app. Frontend is React + Tailwind + shadcn; backend is Convex. Three play modes: local same-device, online (room code or random match), and vs agent.
+A cursed browser board game about Boolean logic, hidden maps, and a student who fell asleep in the wrong proof. Frontend is React + Tailwind + shadcn; backend is Convex. Three play modes: local same-device, online room/random match, and vs The Assayer.
 
 > **Agents (Codex-first):** [`AGENTS.md`](./AGENTS.md) · rules in [`.agents/rules/`](./.agents/rules/) · skills in [`.agents/skills/`](./.agents/skills/)
 
 ## Status
 
-**Playable.** Engine + exact solver + local pass-and-play + **vs The Assayer** are live. Online lobbies (random / friend 4-digit rooms) are on Convex with a **15-game capacity cap**; shared turn sync over the wire is next.
+**Playable.** Engine + exact solver + local pass-and-play + **vs The Assayer** are live. Online lobbies and shared turn sync run through Convex with a **15-game capacity cap**.
 
 ```bash
 npm install
@@ -15,7 +15,49 @@ npm test           # 18 engine/solver tests
 npm run typecheck
 ```
 
-Demo deep links (seeded, reproducible): `/?play=lunch&seed=JUDGES-1` (quick variant) · add `&vs=agent` to face The Assayer.
+## Judge Path
+
+Seeded, reproducible links for a short review session:
+
+| Try | Link | What to look for |
+|-----|------|------------------|
+| Quick game | `/?play=lunch&seed=JUDGES-1&vs=agent&ai=fair` | The Black Forest table, drill turns, Assayer narration, first-turn teaching prompts |
+| Win ending | `/?play=lunch&seed=JUDGES-1&vs=agent&ending=win` | The narrative twist after beating the bot |
+| Coin demo | `/?demo=coin&seat=red` | Teammate's 3D coin / sleep-feature experiment |
+
+```mermaid
+flowchart LR
+  A["James falls asleep"] --> B["Codex opens the case"]
+  B --> C["Drill 9x9 cells"]
+  C --> D["Public evidence"]
+  D --> E["Open theory.fld"]
+  E --> F["Combine maps with AND / OR / XOR"]
+  F --> G{"Correct hidden layout?"}
+  G -- yes --> H["Verdict: released"]
+  G -- no --> I["HOT / WARM / COLD"]
+  I --> C
+```
+
+## Hackathon Fit
+
+| Criterion | What this demonstrates |
+|-----------|------------------------|
+| Technological implementation | A pure game engine, exact solver over Boolean map layouts, bitboard-style reasoning, Convex-backed rooms/matchmaking/online play, and Codex-readable project memory in `.agents/`. |
+| Design | A complete product loop: intro, mode selection, playable table, case-file map UI, Assayer boss presence, audio atmosphere, endings, and replayable seeded demos. |
+| Potential impact | A concrete learning toy for students and educators: Boolean logic, hypothesis spaces, information gain, and the No Free Lunch theorem become playable instead of abstract. |
+| Quality of idea | Logic puzzle + competitive drilling + horror-comedy ritual. The AI opponent is not just a chatbot skin; it plays from exact public evidence and exposes its reasoning through the fiction. |
+
+## README Visuals To Capture
+
+Best submission assets, in order:
+
+| Asset | Route | Why it helps |
+|-------|-------|--------------|
+| Hero still | `/` | Shows the cursed title, plus sign, forest mood, and creator polish immediately. |
+| 10-second gameplay GIF | `/?play=lunch&seed=JUDGES-1&vs=agent&ai=fair` | Shows pin drilling, Assayer turn pacing, evidence, and the table in motion. |
+| Case-file screenshot | Open `theory.fld` in the same run | Explains the AND / OR / XOR logic without needing a long paragraph. |
+| Ending still | `/?play=lunch&seed=JUDGES-1&vs=agent&ending=win` | Proves the narrative has a payoff, not just atmosphere. |
+| Coin feature clip | `/?demo=coin&seat=red` | Highlights the teammate's 3D experiment as a polished bonus. |
 
 ### Why the AI can't lie
 
@@ -79,7 +121,7 @@ Details: [`docs/design-system.md`](./docs/design-system.md).
 
 1. **Local** — two players on the same device, alternating rounds
 2. **Online** — join via shared room code, or random pair
-3. **vs Agent** — human vs AI (behavior TBD)
+3. **vs Agent** — human vs The Assayer, a solver-backed Codex boss with fair and merciless modes
 
 Details: [`docs/product-vision.md`](./docs/product-vision.md).
 
@@ -147,6 +189,7 @@ Canonical: [`.agents/rules/game-rules.md`](./.agents/rules/game-rules.md).
 
 ## Next
 
-1. Add `CONVEX_DEPLOY_KEY` in GitHub Actions secrets (if missing)
-2. Push to `main` to run CI + Convex deploy + GitHub Pages
-3. Open [https://bear-resort.github.io/no-free-lunch/](https://bear-resort.github.io/no-free-lunch/)
+1. Compress `public/audio/moon_ending.wav` to MP3/OGG before final deployment
+2. Add `CONVEX_DEPLOY_KEY` in GitHub Actions secrets (if missing)
+3. Push to `main` to run CI + Convex deploy + GitHub Pages
+4. Open [https://bear-resort.github.io/no-free-lunch/](https://bear-resort.github.io/no-free-lunch/)

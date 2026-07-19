@@ -1,8 +1,19 @@
-// Tiny WebAudio synth — no assets, a few dozen lines. All triggers happen on
-// user gestures (or after one), so the context resumes cleanly.
+// Tiny WebAudio synth plus one music bed. All triggers happen on user gestures
+// (or after one), so the context resumes cleanly.
 
 let ctx: AudioContext | null = null;
 let muted = typeof localStorage !== "undefined" && localStorage.getItem("nfl-muted") === "1";
+type MusicMode = "home" | "game";
+
+const MUSIC_SRC = `${import.meta.env.BASE_URL}audio/moon_ending.wav`;
+const MUSIC_VOLUME: Record<MusicMode, number> = {
+  home: 0.32,
+  game: 0.055,
+};
+
+let music: HTMLAudioElement | null = null;
+let musicMode: MusicMode | null = null;
+let musicUnlockQueued = false;
 
 function ac(): AudioContext {
   ctx ??= new AudioContext();
@@ -16,8 +27,53 @@ export function setMuted(m: boolean) {
   localStorage.setItem("nfl-muted", m ? "1" : "0");
   if (m) {
     stopAmbient();
+    stopAgentChatter();
     stopHeartbeat();
+    music?.pause();
+  } else if (musicMode) {
+    startMusic(musicMode);
   }
+}
+
+function ensureMusic(): HTMLAudioElement {
+  if (music) return music;
+  const el = new Audio(MUSIC_SRC);
+  el.loop = true;
+  el.preload = "auto";
+  el.volume = 0;
+  music = el;
+  return el;
+}
+
+function queueMusicUnlock() {
+  if (musicUnlockQueued || typeof window === "undefined") return;
+  musicUnlockQueued = true;
+  const retry = () => {
+    musicUnlockQueued = false;
+    window.removeEventListener("pointerdown", retry);
+    window.removeEventListener("keydown", retry);
+    if (musicMode) void startMusic(musicMode);
+  };
+  window.addEventListener("pointerdown", retry, { once: true });
+  window.addEventListener("keydown", retry, { once: true });
+}
+
+export function startMusic(mode: MusicMode) {
+  musicMode = mode;
+  if (muted) return;
+  try {
+    const el = ensureMusic();
+    el.volume = MUSIC_VOLUME[mode];
+    const play = el.play();
+    if (play) void play.catch(queueMusicUnlock);
+  } catch {
+    queueMusicUnlock();
+  }
+}
+
+export function stopMusic() {
+  musicMode = null;
+  music?.pause();
 }
 
 /* A heartbeat that starts when James says the name, and quickens until
@@ -104,6 +160,46 @@ export function stopAmbient() {
     }, 900);
   } catch {
     /* audio unavailable */
+  }
+}
+
+let chatterTimer: number | null = null;
+let chatterWanted = false;
+
+function scheduleChatter() {
+  if (!chatterWanted || muted || chatterTimer !== null) return;
+  chatterTimer = window.setTimeout(() => {
+    chatterTimer = null;
+    if (!chatterWanted || muted) return;
+    const notes = 2 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < notes; i++) {
+      const freq = 620 + Math.random() * 920;
+      const delay = i * (0.045 + Math.random() * 0.06);
+      const slideTo = freq * (0.7 + Math.random() * 0.8);
+      tone(
+        freq,
+        0.035 + Math.random() * 0.035,
+        Math.random() > 0.55 ? "square" : "triangle",
+        0.016,
+        delay,
+        slideTo,
+      );
+    }
+    scheduleChatter();
+  }, 2400 + Math.random() * 6500);
+}
+
+export function startAgentChatter() {
+  chatterWanted = true;
+  if (muted) return;
+  scheduleChatter();
+}
+
+export function stopAgentChatter() {
+  chatterWanted = false;
+  if (chatterTimer !== null) {
+    clearTimeout(chatterTimer);
+    chatterTimer = null;
   }
 }
 

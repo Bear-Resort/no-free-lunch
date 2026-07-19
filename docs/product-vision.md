@@ -22,9 +22,11 @@ Build **No Free Lunch**, a turn-based multiplayer game in the browser with three
 
 ### 3. vs Agent
 
-- One human vs an AI agent.
-- Agent behavior, tools, and difficulty are **not specified yet** — wait for further product input before implementing agent logic.
-- UI and session shape can stub an `agent` opponent type.
+- One human vs The Assayer, Codex's solver-backed boss.
+- The Assayer reads the same public evidence as the player, keeps a set of surviving theories, and narrates only facts derived from that exact solver state.
+- Difficulty currently supports:
+  - **Night shift / fair** — fallible pacing, teachable, beatable.
+  - **Merciless** — exact process, no intentional hesitation.
 
 ## UX principles
 
@@ -44,7 +46,7 @@ See **[`.agents/rules/game-rules.md`](../.agents/rules/game-rules.md)** for the 
 
 ## Out of scope until specified
 
-- Agent personality, model, or move selection
+- Cloud LLM-based move selection beyond the current exact-solver Assayer
 - Monetization, accounts beyond what Convex auth needs for online play
 
 ## Cross-device agent memory
