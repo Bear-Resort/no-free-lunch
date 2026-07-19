@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Pickaxe } from "lucide-react";
+
+const TAGLINE_OK = "James slept · Codex noticed";
+const TAGLINE_BUG = "James sleeped · Codex noticed";
 import { LUNCH_BREAK, STANDARD, type Variant } from "@engine/generation";
 import { ForestBackdrop } from "@/components/game/ForestBackdrop";
 import { GoldDust } from "@/components/game/GoldDust";
@@ -44,26 +47,27 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
   );
 }
 
-const DEVELOPERS = [
+const CREATORS = [
   {
-    handle: "@James",
+    handle: "James",
     github: "@james-guo-03",
     href: "https://james-guo-03.github.io",
     site: "james-guo-03.github.io",
   },
   {
-    handle: "@Tina",
+    handle: "Tina",
     github: "@aenorhabditis6",
     href: "https://github.com/aenorhabditis6",
     site: "github.com/aenorhabditis6",
   },
-  {
-    handle: "@Bear_resort",
-    github: "@Bear-Resort",
-    href: "https://bear-resort.github.io",
-    site: "bear-resort.github.io",
-  },
 ] as const;
+
+const ORG = {
+  name: "Bear Resort",
+  github: "@Bear-Resort",
+  href: "https://bear-resort.github.io",
+  site: "bear-resort.github.io",
+} as const;
 
 /** The clearing at the edge of the black forest — first screen. */
 export function Home({
@@ -129,9 +133,7 @@ export function Home({
             No Free Lunch
           </span>
         </div>
-        <span className="hidden font-mono text-xs font-semibold uppercase tracking-[0.25em] text-ink-muted sm:block">
-          James slept · Codex noticed
-        </span>
+        <GlitchTagline />
       </header>
 
       <main className="relative flex flex-1 items-center justify-center py-8">
@@ -190,7 +192,7 @@ export function Home({
             onClick={() => setCreditsOpen(true)}
             className="max-w-[16rem] text-left font-mono text-[11px] leading-relaxed tracking-[0.12em] text-ink-muted/75 transition-colors hover:text-gold sm:text-right"
           >
-            by @James · @Tina · @Bear_resort
+            by James & Tina <br/> from the Bear Resort
             <span className="mt-0.5 block text-[10px] tracking-[0.14em] opacity-80">
               — for Build Week
             </span>
@@ -306,32 +308,61 @@ export function Home({
         <DialogContent className="max-w-md">
           <DialogTitle>The surveyors</DialogTitle>
           <DialogDescription>
-            Built for Build Week — three students who wandered into the forest
-            and came back with a ruleset.
+            Built for Build Week by James &amp; Tina — two students who wandered
+            into the forest and came back with a ruleset.
           </DialogDescription>
 
-          <ul className="mt-5 flex flex-col gap-3">
-            {DEVELOPERS.map((dev) => (
-              <li key={dev.handle}>
-                <a
-                  href={dev.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex flex-col rounded-md border border-edge/80 px-4 py-3 transition-colors hover:border-gold/50 hover:bg-surface/60"
-                >
-                  <span className="font-display text-base font-semibold tracking-wide text-ink group-hover:text-gold">
-                    {dev.handle}
-                  </span>
-                  <span className="mt-1 font-mono text-xs tracking-[0.08em] text-ink-muted">
-                    {dev.github}
-                  </span>
-                  <span className="mt-0.5 font-mono text-[11px] tracking-[0.06em] text-gold/80">
-                    {dev.site}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-5 space-y-4">
+            <div>
+              <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+                Creators
+              </p>
+              <ul className="flex flex-col gap-2">
+                {CREATORS.map((dev) => (
+                  <li key={dev.handle}>
+                    <a
+                      href={dev.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex flex-col rounded-md border border-edge/80 px-4 py-3 transition-colors hover:border-gold/50 hover:bg-surface/60"
+                    >
+                      <span className="font-display text-base font-semibold tracking-wide text-ink group-hover:text-gold">
+                        {dev.handle}
+                      </span>
+                      <span className="mt-1 font-mono text-xs tracking-[0.08em] text-ink-muted">
+                        {dev.github}
+                      </span>
+                      <span className="mt-0.5 font-mono text-[11px] tracking-[0.06em] text-gold/80">
+                        {dev.site}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+                Organization
+              </p>
+              <a
+                href={ORG.href}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex flex-col rounded-md border border-edge/80 px-4 py-3 transition-colors hover:border-gold/50 hover:bg-surface/60"
+              >
+                <span className="font-display text-base font-semibold tracking-wide text-ink group-hover:text-gold">
+                  {ORG.name}
+                </span>
+                <span className="mt-1 font-mono text-xs tracking-[0.08em] text-ink-muted">
+                  {ORG.github}
+                </span>
+                <span className="mt-0.5 font-mono text-[11px] tracking-[0.06em] text-gold/80">
+                  {ORG.site}
+                </span>
+              </a>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -346,6 +377,70 @@ export function Home({
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Tagline error theater:
+ * correct → typo (same color) → red wavy underline → all red + glitch → correct.
+ */
+function GlitchTagline() {
+  type Phase = "ok" | "typo" | "underline" | "alarm";
+  const [phase, setPhase] = useState<Phase>("ok");
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer = 0;
+
+    const wait = (ms: number, next: () => void) => {
+      timer = window.setTimeout(() => {
+        if (!cancelled) next();
+      }, ms);
+    };
+
+    const runCycle = () => {
+      setPhase("ok");
+      wait(7000 + Math.random() * 6000, () => {
+        setPhase("typo");
+        wait(2200 + Math.random() * 800, () => {
+          setPhase("underline");
+          wait(1800 + Math.random() * 600, () => {
+            setPhase("alarm");
+            wait(700, runCycle);
+          });
+        });
+      });
+    };
+
+    runCycle();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  return (
+    <span
+      className={cn(
+        "hidden font-mono text-xs font-semibold uppercase tracking-[0.25em] sm:block",
+        phase === "alarm" ? "tagline-alarm text-danger" : "text-ink-muted",
+      )}
+      aria-label={TAGLINE_OK}
+    >
+      {phase === "ok" ? (
+        TAGLINE_OK
+      ) : (
+        <>
+          James{" "}
+          <span
+            className={cn(phase === "underline" && "tagline-spellcheck")}
+          >
+            sleeped
+          </span>{" "}
+          · Codex noticed
+        </>
+      )}
+    </span>
   );
 }
 
