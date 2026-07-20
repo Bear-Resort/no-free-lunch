@@ -47,6 +47,33 @@ flowchart LR
 | Potential impact | A concrete learning toy for students and educators: Boolean logic, hypothesis spaces, information gain, and the No Free Lunch theorem become playable instead of abstract. |
 | Quality of idea | Logic puzzle + competitive drilling + horror-comedy ritual. The AI opponent is not just a chatbot skin; it plays from exact public evidence and exposes its reasoning through the fiction. |
 
+## Backend & the GPT-voiced Assayer
+
+The Assayer's taunts are written live by an OpenAI model — but grounded so it
+**cannot lie about the game**. The exact solver computes the facts (surviving
+hypotheses, chosen move, mood); a Convex action (`convex/narrator.ts`) asks the
+model only to *phrase* them. No key, no network, or a slow call → the game
+silently falls back to deterministic lines. The game is fully playable either way.
+
+**You do not need an OpenAI key to run or develop the game.** The GPT voice is
+served by a shared Convex backend that holds the key server-side; the browser
+never sees it. To light it up:
+
+```bash
+# One person, once — creates the shared cloud backend:
+npx convex login                                   # browser, your Convex account
+npx convex deploy                                  # prints https://<name>.convex.cloud
+npx convex env set OPENAI_API_KEY <key> --prod     # key lives ONLY on the server
+
+# Everyone else (and the CI build) — just point at that URL:
+echo 'VITE_CONVEX_URL=https://<name>.convex.cloud' >> .env.local
+```
+
+- The **key never goes in git** (`.env.local` is ignored) or the client bundle.
+- `VITE_CONVEX_URL` is **not** secret — it's just the backend address.
+- Set a spend limit on the OpenAI project; if it's hit, the game falls back
+  gracefully. Rotate the key after the event.
+
 ## README Visuals To Capture
 
 Best submission assets, in order:
