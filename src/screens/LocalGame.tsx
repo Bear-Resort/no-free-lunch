@@ -685,10 +685,15 @@ function LocalGameView({
                 : "many";
       if (cat === "attempt" || cat !== spokenCat.current) {
         spokenCat.current = cat;
-        setAssayerNote(narrate(decision));
-        // Ask GPT for the phrasing; the solver already fixed the facts, so the
-        // model can only re-voice what's true. Fallback stays if it's slow/off.
+        // Give GPT a short head start so the box types the final line ONCE.
+        // If it's slow (or off), the deterministic line shows and stands.
+        // The solver already fixed the facts — GPT only re-voices the truth.
         const token = ++narrateToken.current;
+        const fallback = narrate(decision);
+        let settled = false;
+        const showFallback = window.setTimeout(() => {
+          if (!settled && token === narrateToken.current) setAssayerNote(fallback);
+        }, 1500);
         void speakAssayerLine({
           candidates: decision.telemetry.candidates,
           allMapsRevealed: decision.telemetry.allMapsRevealed,
@@ -697,7 +702,9 @@ function LocalGameView({
           turn: next.turn,
           turnCap: next.variant.turnCap,
         }).then((line) => {
-          if (line && token === narrateToken.current) setAssayerNote(line);
+          settled = true;
+          clearTimeout(showFallback);
+          if (token === narrateToken.current) setAssayerNote(line || fallback);
         });
       }
     }, 1100);

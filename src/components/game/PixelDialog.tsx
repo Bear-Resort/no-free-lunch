@@ -72,10 +72,10 @@ export function PixelDialog({
       <span className="pointer-events-none absolute -top-9 right-6 opacity-35">
         <WatchingEyes size={11} />
       </span>
-      <span className="font-pixel text-2xl leading-tight text-ink">
+      <p className="min-h-[2.6em] font-pixel text-2xl leading-relaxed text-ink [text-wrap:pretty]">
         <EmText chars={chars} shown={shown} />
         {complete && <span className="caret-blink text-gold">▏</span>}
-      </span>
+      </p>
       </button>
     </>
   );
