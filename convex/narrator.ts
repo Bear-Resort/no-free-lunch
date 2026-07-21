@@ -15,6 +15,13 @@ HARD RULES:
 - You are given the TRUE state of your reasoning and a MOOD. Match the mood. Never invent numbers or claims beyond what you are told. Never reveal the hidden formula or where gold is.
 - No emoji. No stage directions. No quotation marks. Just the line.`;
 
+const DEFAULT_MODEL = "gpt-5.6-luna";
+
+function clampLine(line: string): string {
+  const cleaned = line.replace(/^["“”]+|["“”]+$/g, "").replace(/\s+/g, " ").trim();
+  return cleaned.split(/\s+/).slice(0, 16).join(" ");
+}
+
 /** Interpret the solver facts into an emotional register the model must match. */
 function moodFor(a: {
   candidates: number;
@@ -45,6 +52,7 @@ export const speak = action({
   handler: async (_ctx, args) => {
     const key = process.env.OPENAI_API_KEY;
     if (!key) return { line: "", source: "no-key" };
+    const model = process.env.OPENAI_NARRATOR_MODEL ?? DEFAULT_MODEL;
 
     const facts = [
       `MOOD: ${moodFor(args)}`,
@@ -56,31 +64,31 @@ export const speak = action({
     ].join(" ");
 
     try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const res = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${key}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.9,
-          max_tokens: 60,
-          messages: [
-            { role: "system", content: SYSTEM },
-            {
-              role: "user",
-              content: `${facts}\n\nSay your line, counsel is waiting.`,
-            },
-          ],
+          model,
+          instructions: SYSTEM,
+          input: `${facts}\n\nSay your line, counsel is waiting.`,
+          max_output_tokens: 60,
+          reasoning: { effort: "none" },
         }),
       });
       if (!res.ok) return { line: "", source: `http-${res.status}` };
       const data = (await res.json()) as {
-        choices?: { message?: { content?: string } }[];
+        output_text?: string;
+        output?: { content?: { text?: string }[] }[];
       };
-      const line = data.choices?.[0]?.message?.content?.trim() ?? "";
-      return { line, source: line ? "openai" : "empty" };
+      const raw =
+        data.output_text ??
+        data.output?.flatMap((item) => item.content ?? []).find((item) => item.text)?.text ??
+        "";
+      const line = clampLine(raw);
+      return { line, source: line ? model : "empty" };
     } catch {
       return { line: "", source: "error" };
     }
